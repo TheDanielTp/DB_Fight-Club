@@ -343,11 +343,24 @@ def get_gym_id_by_name(gym_name):
         cursor.close()
         connection.close()
 
+def cancel_keyboard():
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+    markup.add(types.KeyboardButton("لغو عملیات"))
+    return markup
+
+@bot.message_handler(func=lambda m: m.text == "لغو عملیات")
+def cancel_process(message):
+    chat_id = message.chat.id
+
+    bot.clear_step_handler_by_chat_id(chat_id)
+    bot.send_message(chat_id, "عملیات لغو شد.", reply_markup=main_menu())
+
 @bot.message_handler(func=lambda message: message.text == 'اضافه کردن مبارز')
 @login_required
 def add_member_command(message):
     chat_id = message.chat.id
     msg = bot.send_message(chat_id, "نام مبارز جدید را وارد کنید:")
+    reply_markup = cancel_keyboard()
     bot.register_next_step_handler(msg, process_fighter_name)
 
 def process_fighter_name(message):
@@ -356,10 +369,12 @@ def process_fighter_name(message):
     
     if not full_name or len(full_name) < 3:
         msg = bot.send_message(chat_id, "نام وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
+        reply_markup = cancel_keyboard()
         bot.register_next_step_handler(msg, process_fighter_name)
         return
     
     msg = bot.send_message(chat_id, "لطفاً نام مستعار مبارز را وارد کنید (اختیاری):")
+    reply_markup = cancel_keyboard()
     bot.register_next_step_handler(msg, process_fighter_nickname, full_name)
 
 def process_fighter_nickname(message, full_name):
@@ -367,6 +382,7 @@ def process_fighter_nickname(message, full_name):
     nickname = message.text.strip() if message.text else None
     
     msg = bot.send_message(chat_id, "لطفاً رده وزنی مبارز را وارد کنید:")
+    reply_markup = cancel_keyboard()
     bot.register_next_step_handler(msg, process_fighter_weight_class, full_name, nickname)
 
 def process_fighter_weight_class(message, full_name, nickname):
@@ -375,10 +391,12 @@ def process_fighter_weight_class(message, full_name, nickname):
 
     if not weight_class:
         msg = bot.send_message(chat_id, "رده وزنی وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
+        reply_markup = cancel_keyboard()
         bot.register_next_step_handler(msg, process_fighter_weight_class, full_name, nickname)
         return
     
     msg = bot.send_message(chat_id, "لطفاً سن مبارز را وارد کنید:")
+    reply_markup = cancel_keyboard()
     bot.register_next_step_handler(msg, process_fighter_age, full_name, nickname, weight_class)
 
 def process_fighter_age(message, full_name, nickname, weight_class):
@@ -387,10 +405,12 @@ def process_fighter_age(message, full_name, nickname, weight_class):
 
     if not age.isdigit() or int(age) <= 0 or not age:
         msg = bot.send_message(chat_id, "سن وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
+        reply_markup = cancel_keyboard()
         bot.register_next_step_handler(msg, process_fighter_age, full_name, nickname, weight_class)
         return
     
     msg = bot.send_message(chat_id, "لطفاً ملیت مبارز را وارد کنید:")
+    reply_markup = cancel_keyboard()
     bot.register_next_step_handler(msg, process_fighter_nationality, full_name, nickname, weight_class, age)
 
 def process_fighter_nationality(message, full_name, nickname, weight_class, age):
@@ -398,6 +418,7 @@ def process_fighter_nationality(message, full_name, nickname, weight_class, age)
     nationality = message.text.strip() if message.text else None
     
     msg = bot.send_message(chat_id, "لطفاً نام باشگاه مبارز را وارد کنید:")
+    reply_markup = cancel_keyboard()
     bot.register_next_step_handler(msg, process_fighter_gym, full_name, nickname, weight_class, age, nationality)
 
 def process_fighter_gym(message, full_name, nickname, weight_class, age, nationality):
@@ -406,6 +427,7 @@ def process_fighter_gym(message, full_name, nickname, weight_class, age, nationa
 
     if not gym_name:
         msg = bot.send_message(chat_id, "نام وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید:")
+        reply_markup = cancel_keyboard()
         bot.register_next_step_handler(msg, process_fighter_gym, full_name, nickname, weight_class, age, nationality)
         return
     
@@ -413,6 +435,7 @@ def process_fighter_gym(message, full_name, nickname, weight_class, age, nationa
 
     if gym_id is None:
         msg = bot.send_message(chat_id, "چنین باشگاهی ثبت نشده است. لطفاً نام باشگاه را مجدداً وارد کنید:")
+        reply_markup = cancel_keyboard()
         bot.register_next_step_handler(msg, process_fighter_gym, full_name, nickname, weight_class, age, nationality)
         return
     else:
@@ -435,7 +458,7 @@ def process_fighter_gym(message, full_name, nickname, weight_class, age, nationa
             bot.send_message(chat_id, f"مبارز جدید با موفقیت ثبت شد!\nشناسه مبارز: {fighter_id}")
             cur.close()
         except Error as e:
-            bot.send_message(chat_id, f"خطا در ثبت مبارز: {e}")
+            bot.send_message(chat_id, f"خطا در ثبت مبارز:\n{e}")
         finally:
             if conn:
                 conn.close()
