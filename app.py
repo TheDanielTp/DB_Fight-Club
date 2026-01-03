@@ -49,7 +49,7 @@ def create_tables():
                 name varchar NOT NULL,
                 location varchar NOT NULL,
                 owner varchar NOT NULL,
-                reputation_score integer DEFAULT 50 CHECK (reputation_score >= 0 AND reputation_score <= 100),
+                reputation_score integer DEFAULT 75 CHECK (reputation_score >= 0 AND reputation_score <= 100)
             );
         """)
         
@@ -90,7 +90,7 @@ def create_tables():
                 match_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                 start_date timestamp NOT NULL,
                 end_date timestamp,
-                location varchar NOT NULL,
+                location varchar NOT NULL
             );
         """)
 
