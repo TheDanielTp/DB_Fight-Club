@@ -675,7 +675,7 @@ def process_fighter_search(message):
         fighters = cur.fetchall()
         
         if not fighters:
-            bot.send_message(chat_id, f"هیچ مبارزی با نام '{search_term}' یافت نشد.", reply_markup=main_menu())
+            bot.send_message(chat_id, f"هیچ مبارزی با نام یا نام مستعار '{search_term}' یافت نشد.", reply_markup=main_menu())
             return
         
         response = f"نتایج جست‌وجو برای '{search_term}':\n\n"
@@ -702,7 +702,7 @@ def process_fighter_search(message):
 @login_required
 def search_gym_menu(message):
     chat_id = message.chat.id
-    msg = bot.send_message(chat_id, "لطفاً نام باشگاه را برای جست‌وجو وارد کنید:", reply_markup=cancel_keyboard())
+    msg = bot.send_message(chat_id, "لطفاً نام باشگاه یا مکان باشگاه یا نام مالک را برای جست‌وجو وارد کنید:", reply_markup=cancel_keyboard())
     bot.register_next_step_handler(msg, process_gym_search)
 
 def process_gym_search(message):
@@ -730,7 +730,7 @@ def process_gym_search(message):
         gyms = cur.fetchall()
         
         if not gyms:
-            bot.send_message(chat_id, f"هیچ باشگاهی با نام '{search_term}' یافت نشد.", reply_markup=main_menu())
+            bot.send_message(chat_id, f"هیچ باشگاهی با این نام یا این مکان یا این مالک '{search_term}' یافت نشد.", reply_markup=main_menu())
             return
         
         response = f"نتایج جست‌وجو برای '{search_term}':\n\n"
@@ -753,6 +753,65 @@ def process_gym_search(message):
             
             response += f"تعداد مبارزین: {fighter_count}\n"
             response += f"تعداد مربیان: {trainer_count}\n"
+            response += "-" * 30 + "\n"
+        
+        bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
+        cur.close()
+    except Error as e:
+        bot.send_message(chat_id, f"خطا در جست‌وجو: {e}", reply_markup=main_menu())
+    finally:
+        if conn:
+            conn.close()
+
+@bot.message_handler(func=lambda message: message.text == 'جست‌وجوی مربی')
+@login_required
+def search_trainer_menu(message):
+    chat_id = message.chat.id
+    msg = bot.send_message(chat_id, "لطفاً نام مربی یا نام تخصص را برای جست‌وجو وارد کنید:", reply_markup=cancel_keyboard())
+    bot.register_next_step_handler(msg, process_trainer_search)
+
+def process_trainer_search(message):
+    chat_id = message.chat.id
+    search_term = message.text.strip()
+    
+    if search_term == "لغو عملیات":
+        cancel_process(message)
+        return
+    
+    conn = get_db_connection()
+    if conn is None:
+        bot.send_message(chat_id, "خطا در اتصال به پایگاه داده.")
+        return
+    
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT t.trainer_id, t.name, t.specialty, g.name as gym_name
+            FROM trainer t
+            LEFT JOIN gym g ON t.gym_id = g.gym_id
+            WHERE t.name ILIKE %s OR t.specialty ILIKE %s
+            ORDER BY t.name
+        """, (f'%{search_term}%', f'%{search_term}%'))
+        
+        trainers = cur.fetchall()
+        
+        if not trainers:
+            bot.send_message(chat_id, f"هیچ مربی‌ای با این نام یا این تخصص '{search_term}' یافت نشد.", reply_markup=main_menu())
+            return
+        
+        response = f"نتایج جست‌وجو برای '{search_term}':\n\n"
+        for trainer in trainers:
+            response += f"**{trainer[1]}**\n"
+            response += f"شناسه مربی: {trainer[0]}\n"
+            response += f"تخصص: {trainer[2]}\n"
+            response += f"باشگاه: {trainer[3] or 'ثبت نشده'}\n"
+            
+            cur.execute("""
+                SELECT COUNT(*) FROM fighter_trainer WHERE trainer_id = %s
+            """, (trainer[0],))
+            fighter_count = cur.fetchone()[0] # type: ignore
+            
+            response += f"تعداد شاگردان: {fighter_count}\n"
             response += "-" * 30 + "\n"
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
