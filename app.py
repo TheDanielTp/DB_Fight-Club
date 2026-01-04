@@ -597,7 +597,7 @@ def process_trainer_specialty(message, full_name):
         return
 
     msg = bot.send_message(chat_id, "لطفاً نام صاحب باشگاه را وارد کنید:")
-    bot.register_next_step_handler(msg, process_gym_owner, full_name, specialty)
+    bot.register_next_step_handler(msg, process_trainer_gym, full_name, specialty)
 
 def process_trainer_gym(message, full_name, specialty):
     chat_id = message.chat.id
