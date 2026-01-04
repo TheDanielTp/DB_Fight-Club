@@ -663,7 +663,6 @@ def process_fighter_search(message):
     
     try:
         cur = conn.cursor()
-        # Search in name and nickname
         cur.execute("""
             SELECT f.fighter_id, f.name, f.nickname, f.weight_class, f.age, 
                    f.nationality, f.status, g.name as gym_name
@@ -676,7 +675,7 @@ def process_fighter_search(message):
         fighters = cur.fetchall()
         
         if not fighters:
-            bot.send_message(chat_id, f"هیچ مبارزی با عبارت '{search_term}' یافت نشد.", reply_markup=main_menu())
+            bot.send_message(chat_id, f"هیچ مبارزی با نام '{search_term}' یافت نشد.", reply_markup=main_menu())
             return
         
         response = f"نتایج جست‌وجو برای '{search_term}':\n\n"
@@ -689,6 +688,71 @@ def process_fighter_search(message):
             response += f"ملیت: {fighter[5]}\n"
             response += f"وضعیت: {fighter[6]}\n"
             response += f"باشگاه: {fighter[7] or 'ثبت نشده'}\n"
+            response += "-" * 30 + "\n"
+        
+        bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
+        cur.close()
+    except Error as e:
+        bot.send_message(chat_id, f"خطا در جست‌وجو: {e}", reply_markup=main_menu())
+    finally:
+        if conn:
+            conn.close()
+
+@bot.message_handler(func=lambda message: message.text == 'جست‌وجوی باشگاه')
+@login_required
+def search_gym_menu(message):
+    chat_id = message.chat.id
+    msg = bot.send_message(chat_id, "لطفاً نام باشگاه را برای جست‌وجو وارد کنید:", reply_markup=cancel_keyboard())
+    bot.register_next_step_handler(msg, process_gym_search)
+
+def process_gym_search(message):
+    chat_id = message.chat.id
+    search_term = message.text.strip()
+    
+    if search_term == "لغو عملیات":
+        cancel_process(message)
+        return
+    
+    conn = get_db_connection()
+    if conn is None:
+        bot.send_message(chat_id, "خطا در اتصال به پایگاه داده.")
+        return
+    
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT gym_id, name, location, owner, reputation_score
+            FROM gym
+            WHERE name ILIKE %s OR location ILIKE %s OR owner ILIKE %s
+            ORDER BY name
+        """, (f'%{search_term}%', f'%{search_term}%', f'%{search_term}%'))
+        
+        gyms = cur.fetchall()
+        
+        if not gyms:
+            bot.send_message(chat_id, f"هیچ باشگاهی با نام '{search_term}' یافت نشد.", reply_markup=main_menu())
+            return
+        
+        response = f"نتایج جست‌وجو برای '{search_term}':\n\n"
+        for gym in gyms:
+            response += f"**{gym[1]}**\n"
+            response += f"شناسه باشگاه: {gym[0]}\n"
+            response += f"مکان: {gym[2]}\n"
+            response += f"مالک: {gym[3]}\n"
+            response += f"امتیاز شهرت: {gym[4]}\n"
+            
+            cur.execute("""
+                SELECT COUNT(*) FROM fighter WHERE gym_id = %s
+            """, (gym[0],))
+            fighter_count = cur.fetchone()[0] # type: ignore
+            
+            cur.execute("""
+                SELECT COUNT(*) FROM trainer WHERE gym_id = %s
+            """, (gym[0],))
+            trainer_count = cur.fetchone()[0] # type: ignore
+            
+            response += f"تعداد مبارزین: {fighter_count}\n"
+            response += f"تعداد مربیان: {trainer_count}\n"
             response += "-" * 30 + "\n"
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
