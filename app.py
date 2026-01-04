@@ -525,13 +525,13 @@ def process_gym_location(message, full_name):
 
 def process_gym_owner(message, full_name, location):
     chat_id = message.chat.id
-    owner_name = message.text.strip()
+    owner = message.text.strip()
 
-    if owner_name == "لغو عملیات":
+    if owner == "لغو عملیات":
         cancel_process(message)
         return
     
-    if not owner_name or len(owner_name) < 2:
+    if not owner or len(owner) < 2:
         msg = bot.send_message(chat_id, "نام وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
         bot.register_next_step_handler(msg, process_gym_name)
         return
@@ -544,10 +544,10 @@ def process_gym_owner(message, full_name, location):
     try:
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO gym (name, location, owner_name)
+            INSERT INTO gym (name, location, owner)
             VALUES (%s, %s, %s)
             RETURNING gym_id
-        """, (full_name, location, owner_name))
+        """, (full_name, location, owner))
 
         gym_id = cur.fetchone()[0]
         conn.commit()
