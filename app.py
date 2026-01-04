@@ -240,7 +240,7 @@ def show_fighters(message):
         for fighter in fighters:
             response += f"{fighter[1]}\n"
             response += f"شناسه مبارز: {fighter[0]}\n"
-            response += f"لقب: {fighter[2] or 'ثبت نشده'}\n"
+            response += f"نام مستعار: {fighter[2] or 'ثبت نشده'}\n"
             response += f"رده وزنی: {fighter[3]}\n"
             response += f"سن: {fighter[4]}\n"
             response += f"ملیت: {fighter[5]}\n"
@@ -348,7 +348,7 @@ def get_gym_id_by_name(gym_name):
         print(f"DB error: {e}")
         return None
     finally:
-        cursor.close()
+        cursor.close() # type: ignore
         connection.close()
 
 def cancel_keyboard():
@@ -471,7 +471,7 @@ def process_fighter_gym(message, full_name, nickname, weight_class, age, nationa
                 RETURNING fighter_id
             """, (full_name, nickname, weight_class, age, nationality, gym_id))
 
-            fighter_id = cur.fetchone()[0]
+            fighter_id = cur.fetchone()[0] # type: ignore
             conn.commit()
 
             bot.send_message(chat_id, f"مبارز جدید با موفقیت ثبت شد!\nشناسه مبارز: {fighter_id}", reply_markup=main_menu())
@@ -549,7 +549,7 @@ def process_gym_owner(message, full_name, location):
             RETURNING gym_id
         """, (full_name, location, owner))
 
-        gym_id = cur.fetchone()[0]
+        gym_id = cur.fetchone()[0] # type: ignore
         conn.commit()
 
         bot.send_message(chat_id, f"باشگاه جدید با موفقیت ثبت شد!\nشناسه باشگاه: {gym_id}", reply_markup=main_menu())
@@ -596,7 +596,7 @@ def process_trainer_specialty(message, full_name):
         bot.register_next_step_handler(msg, process_trainer_specialty, full_name)
         return
 
-    msg = bot.send_message(chat_id, "لطفاً نام صاحب باشگاه را وارد کنید:")
+    msg = bot.send_message(chat_id, "لطفاً نام باشگاه مربی را وارد کنید:")
     bot.register_next_step_handler(msg, process_trainer_gym, full_name, specialty)
 
 def process_trainer_gym(message, full_name, specialty):
@@ -630,7 +630,7 @@ def process_trainer_gym(message, full_name, specialty):
                 RETURNING trainer_id
             """, (full_name, specialty, gym_id))
 
-            trainer_id = cur.fetchone()[0]
+            trainer_id = cur.fetchone()[0] # type: ignore
             conn.commit()
 
             bot.send_message(chat_id, f"مربی جدید با موفقیت ثبت شد!\nشناسه مربی: {trainer_id}", reply_markup=main_menu())
@@ -641,109 +641,19 @@ def process_trainer_gym(message, full_name, specialty):
             if conn:
                 conn.close()
 
-@bot.message_handler(func=lambda message: message.text == 'امانت دادن کتاب')
+@bot.message_handler(func=lambda message: message.text == 'جست‌وجوی مبارز')
 @login_required
-def borrow_book_command(message):
+def search_fighter_menu(message):
     chat_id = message.chat.id
-    msg = bot.send_message(chat_id, "لطفاً کد کتاب را وارد کنید:")
-    bot.register_next_step_handler(msg, process_borrow_book_id)
+    msg = bot.send_message(chat_id, "لطفاً نام مبارز را برای جست‌وجو وارد کنید:", reply_markup=cancel_keyboard())
+    bot.register_next_step_handler(msg, process_fighter_search)
 
-def process_borrow_book_id(message):
+def process_fighter_search(message):
     chat_id = message.chat.id
-    book_id = message.text.strip()
+    search_term = message.text.strip()
     
-    if not book_id.isdigit():
-        bot.send_message(chat_id, "کد کتاب باید عدد باشد.")
-        return
-    
-    msg = bot.send_message(chat_id, "لطفاً کد عضو را وارد کنید:")
-    bot.register_next_step_handler(msg, process_borrow_member_id, int(book_id))
-
-def process_borrow_member_id(message, book_id):
-    chat_id = message.chat.id
-    member_id = message.text.strip()
-    
-    if not member_id.isdigit():
-        bot.send_message(chat_id, "کد عضو باید عدد باشد.")
-        return
-    
-    msg = bot.send_message(chat_id, "برای چند روز امانت داده شود؟ (پیش‌فرض: 14 روز)")
-    bot.register_next_step_handler(msg, process_borrow_days, book_id, int(member_id))
-
-def process_borrow_days(message, book_id, member_id):
-    chat_id = message.chat.id
-    days_text = message.text.strip()
-    
-    try:
-        days = int(days_text) if days_text else 14
-        if days < 1:
-            days = 14
-    except:
-        days = 14
-    
-    due_date = datetime.now() + timedelta(days=days)
-    
-    conn = get_db_connection()
-    if conn is None:
-        bot.send_message(chat_id, "خطا در اتصال به پایگاه داده.")
-        return
-    
-    try:
-        cur = conn.cursor()
-        
-        cur.execute("SELECT available_copies, title FROM books WHERE id = %s", (book_id,))
-        book_info = cur.fetchone()
-        
-        if not book_info:
-            bot.send_message(chat_id, "کتابی با این کد یافت نشد.")
-            return
-        
-        if book_info[0] < 1:
-            bot.send_message(chat_id, f"کتاب '{book_info[1]}' در حال حاضر موجود نیست.")
-            return
-        
-        cur.execute("SELECT full_name FROM members WHERE id = %s AND is_active = TRUE", (member_id,))
-        member_info = cur.fetchone()
-        
-        if not member_info:
-            bot.send_message(chat_id, "عضوی با این کد یافت نشد یا غیرفعال است.")
-            return
-        
-        cur.execute("""
-            INSERT INTO borrowings (book_id, member_id, due_date)
-            VALUES (%s, %s, %s)
-        """, (book_id, member_id, due_date))
-        
-        cur.execute("""
-            UPDATE books 
-            SET available_copies = available_copies - 1 
-            WHERE id = %s
-        """, (book_id,))
-        
-        conn.commit()
-        
-        due_date_str = due_date.strftime('%Y-%m-%d')
-        bot.send_message(chat_id, f"کتاب '{book_info[1]}' به '{member_info[0]}' امانت داده شد.\nموعد بازگشت: {due_date_str}")
-        cur.close()
-    except Error as e:
-        bot.send_message(chat_id, f"خطا در ثبت امانت: {e}")
-    finally:
-        if conn:
-            conn.close()
-
-@bot.message_handler(func=lambda message: message.text == 'پس گرفتن کتاب')
-@login_required
-def return_book_command(message):
-    chat_id = message.chat.id
-    msg = bot.send_message(chat_id, "لطفاً کد کتاب را وارد کنید:")
-    bot.register_next_step_handler(msg, process_return_book)
-
-def process_return_book(message):
-    chat_id = message.chat.id
-    book_id = message.text.strip()
-    
-    if not book_id.isdigit():
-        bot.send_message(chat_id, "کد کتاب باید عدد باشد.")
+    if search_term == "لغو عملیات":
+        cancel_process(message)
         return
     
     conn = get_db_connection()
@@ -753,197 +663,38 @@ def process_return_book(message):
     
     try:
         cur = conn.cursor()
-        
+        # Search in name and nickname
         cur.execute("""
-            SELECT b.id, bk.title, m.full_name 
-            FROM borrowings b
-            JOIN books bk ON b.book_id = bk.id
-            JOIN members m ON b.member_id = m.id
-            WHERE b.book_id = %s AND b.is_returned = FALSE
-            ORDER BY b.borrow_date DESC LIMIT 1
-        """, (int(book_id),))
+            SELECT f.fighter_id, f.name, f.nickname, f.weight_class, f.age, 
+                   f.nationality, f.status, g.name as gym_name
+            FROM fighter f
+            LEFT JOIN gym g ON f.gym_id = g.gym_id
+            WHERE f.name ILIKE %s OR f.nickname ILIKE %s
+            ORDER BY f.name
+        """, (f'%{search_term}%', f'%{search_term}%'))
         
-        borrowing = cur.fetchone()
+        fighters = cur.fetchall()
         
-        if not borrowing:
-            bot.send_message(chat_id, "هیچ امانت فعالی برای این کتاب یافت نشد.")
+        if not fighters:
+            bot.send_message(chat_id, f"هیچ مبارزی با عبارت '{search_term}' یافت نشد.", reply_markup=main_menu())
             return
         
-        cur.execute("""
-            UPDATE borrowings 
-            SET is_returned = TRUE, return_date = CURRENT_TIMESTAMP 
-            WHERE id = %s
-        """, (borrowing[0],))
-        
-        cur.execute("""
-            UPDATE books 
-            SET available_copies = available_copies + 1 
-            WHERE id = %s
-        """, (int(book_id),))
-        
-        conn.commit()
-        
-        bot.send_message(chat_id, f"کتاب '{borrowing[1]}' از '{borrowing[2]}' پس گرفته شد.")
-        cur.close()
-    except Error as e:
-        bot.send_message(chat_id, f"خطا در پس گرفتن کتاب: {e}")
-    finally:
-        if conn:
-            conn.close()
-
-@bot.message_handler(func=lambda message: message.text == 'جستجوی کتاب')
-@login_required
-def search_book_menu(message):
-    bot.send_message(message.chat.id, "لطفاً نوع جستجو را انتخاب کنید:", 
-                     reply_markup=search_menu())
-
-@bot.message_handler(func=lambda message: message.text == 'جستجو با عنوان')
-@login_required
-def search_by_title_command(message):
-    chat_id = message.chat.id
-    msg = bot.send_message(chat_id, "لطفاً بخشی از عنوان کتاب را وارد کنید:")
-    bot.register_next_step_handler(msg, search_by_title)
-
-def search_by_title(message):
-    chat_id = message.chat.id
-    keyword = f"%{message.text.strip()}%"
-    
-    conn = get_db_connection()
-    if conn is None:
-        bot.send_message(chat_id, "خطا در اتصال به پایگاه داده.")
-        return
-    
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT id, title, author, available_copies 
-            FROM books 
-            WHERE title ILIKE %s 
-            ORDER BY title
-        """, (keyword,))
-        
-        books = cur.fetchall()
-        
-        if not books:
-            bot.send_message(chat_id, "کتابی با این عنوان یافت نشد.")
-            return
-        
-        response = f"نتایج جستجو برای '{message.text.strip()}':\n\n"
-        for book in books:
-            status = "موجود" if book[3] > 0 else "امانت"
-            response += f"{book[1]}\n"
-            response += f"نویسنده: {book[2]}\n"
-            response += f"وضعیت: {status}\n"
-            response += f"کد کتاب: {book[0]}\n"
+        response = f"نتایج جست‌وجو برای '{search_term}':\n\n"
+        for fighter in fighters:
+            response += f"**{fighter[1]}**\n"
+            response += f"شناسه مبارز: {fighter[0]}\n"
+            response += f"نام مستعار: {fighter[2] or 'ثبت نشده'}\n"
+            response += f"رده وزنی: {fighter[3]}\n"
+            response += f"سن: {fighter[4]}\n"
+            response += f"ملیت: {fighter[5]}\n"
+            response += f"وضعیت: {fighter[6]}\n"
+            response += f"باشگاه: {fighter[7] or 'ثبت نشده'}\n"
             response += "-" * 30 + "\n"
         
-        bot.send_message(chat_id, response, parse_mode='Markdown')
+        bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
         cur.close()
     except Error as e:
-        bot.send_message(chat_id, f"خطا در جستجو: {e}")
-    finally:
-        if conn:
-            conn.close()
-
-@bot.message_handler(func=lambda message: message.text == 'جستجو با نویسنده')
-@login_required
-def search_by_author_command(message):
-    chat_id = message.chat.id
-    msg = bot.send_message(chat_id, "لطفاً نام نویسنده را وارد کنید:")
-    bot.register_next_step_handler(msg, search_by_author)
-
-def search_by_author(message):
-    chat_id = message.chat.id
-    keyword = f"%{message.text.strip()}%"
-    
-    conn = get_db_connection()
-    if conn is None:
-        bot.send_message(chat_id, "خطا در اتصال به پایگاه داده.")
-        return
-    
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT id, title, author, available_copies 
-            FROM books 
-            WHERE author ILIKE %s 
-            ORDER BY title
-        """, (keyword,))
-        
-        books = cur.fetchall()
-        
-        if not books:
-            bot.send_message(chat_id, "کتابی از این نویسنده یافت نشد.")
-            return
-        
-        response = f"نتایج جستجو برای نویسنده '{message.text.strip()}':\n\n"
-        for book in books:
-            status = "موجود" if book[3] > 0 else "امانت"
-            response += f"{book[1]}\n"
-            response += f"نویسنده: {book[2]}\n"
-            response += f"وضعیت: {status}\n"
-            response += f"کد کتاب: {book[0]}\n"
-            response += "-" * 30 + "\n"
-        
-        bot.send_message(chat_id, response, parse_mode='Markdown')
-        cur.close()
-    except Error as e:
-        bot.send_message(chat_id, f"خطا در جستجو: {e}")
-    finally:
-        if conn:
-            conn.close()
-
-@bot.message_handler(func=lambda message: message.text == 'وضعیت کتاب‌های امانت‌رفته')
-@login_required
-def show_borrowed_books(message):
-    conn = get_db_connection()
-    if conn is None:
-        bot.send_message(message.chat.id, "خطا در اتصال به پایگاه داده.")
-        return
-    
-    try:
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT 
-                b.title,
-                bk.author,
-                m.full_name,
-                br.borrow_date,
-                br.due_date,
-                CASE 
-                    WHEN br.due_date < CURRENT_DATE THEN 'معوقه'
-                    ELSE 'در امانت'
-                END as status
-            FROM borrowings br
-            JOIN books b ON br.book_id = b.id
-            JOIN members m ON br.member_id = m.id
-            JOIN books bk ON br.book_id = bk.id
-            WHERE br.is_returned = FALSE
-            ORDER BY br.due_date
-        """)
-        
-        borrowed = cur.fetchall()
-        
-        if not borrowed:
-            bot.send_message(message.chat.id, "هیچ کتابی در حال حاضر امانت نیست.")
-            return
-        
-        response = "کتاب‌های در حال امانت:\n\n"
-        for item in borrowed:
-            borrow_date = item[3].strftime('%Y-%m-%d')
-            due_date = item[4].strftime('%Y-%m-%d')
-            response += f"{item[0]}\n"
-            response += f"نویسنده: {item[1]}\n"
-            response += f"امانت گیرنده: {item[2]}\n"
-            response += f"تاریخ امانت: {borrow_date}\n"
-            response += f"موعد بازگشت: {due_date}\n"
-            response += f"وضعیت: {item[5]}\n"
-            response += "-" * 30 + "\n"
-        
-        bot.send_message(message.chat.id, response, parse_mode='Markdown')
-        cur.close()
-    except Error as e:
-        bot.send_message(message.chat.id, f"خطا در دریافت اطلاعات: {e}")
+        bot.send_message(chat_id, f"خطا در جست‌وجو: {e}", reply_markup=main_menu())
     finally:
         if conn:
             conn.close()
