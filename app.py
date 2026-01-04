@@ -368,9 +368,9 @@ def cancel_process(message):
 def add_member_command(message):
     chat_id = message.chat.id
     msg = bot.send_message(chat_id, "لطفاً نام مبارز جدید را وارد کنید:", reply_markup=cancel_keyboard())
-    bot.register_next_step_handler(msg, process_fighter_name)
+    bot.register_next_step_handler(msg, process_gym_name)
 
-def process_fighter_name(message):
+def process_gym_name(message):
     chat_id = message.chat.id
     full_name = message.text.strip()
 
@@ -378,9 +378,9 @@ def process_fighter_name(message):
         cancel_process(message)
         return
     
-    if not full_name or len(full_name) < 3:
+    if not full_name or len(full_name) < 2:
         msg = bot.send_message(chat_id, "نام وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
-        bot.register_next_step_handler(msg, process_fighter_name)
+        bot.register_next_step_handler(msg, process_gym_name)
         return
     
     msg = bot.send_message(chat_id, "لطفاً نام مستعار مبارز را وارد کنید (اختیاری):")
@@ -398,9 +398,9 @@ def process_fighter_nickname(message, full_name):
         nickname = None
 
     msg = bot.send_message(chat_id, "لطفاً رده وزنی مبارز را وارد کنید:")
-    bot.register_next_step_handler(msg, process_fighter_weight_class, full_name, nickname)
+    bot.register_next_step_handler(msg, process_gym_location, full_name, nickname)
 
-def process_fighter_weight_class(message, full_name, nickname):
+def process_gym_location(message, full_name, nickname):
     chat_id = message.chat.id
     weight_class = message.text.strip()
 
@@ -410,13 +410,13 @@ def process_fighter_weight_class(message, full_name, nickname):
 
     if not weight_class:
         msg = bot.send_message(chat_id, "رده وزنی وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
-        bot.register_next_step_handler(msg, process_fighter_weight_class, full_name, nickname)
+        bot.register_next_step_handler(msg, process_gym_location, full_name, nickname)
         return
 
     msg = bot.send_message(chat_id, "لطفاً سن مبارز را وارد کنید:")
-    bot.register_next_step_handler(msg, process_fighter_age, full_name, nickname, weight_class)
+    bot.register_next_step_handler(msg, process_gym_owner, full_name, nickname, weight_class)
 
-def process_fighter_age(message, full_name, nickname, weight_class):
+def process_gym_owner(message, full_name, nickname, weight_class):
     chat_id = message.chat.id
     age = message.text.strip()
     age = translate_to_english(age)
@@ -427,7 +427,7 @@ def process_fighter_age(message, full_name, nickname, weight_class):
 
     if not age.isdigit() or int(age) <= 0 or not age:
         msg = bot.send_message(chat_id, "سن وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
-        bot.register_next_step_handler(msg, process_fighter_age, full_name, nickname, weight_class)
+        bot.register_next_step_handler(msg, process_gym_owner, full_name, nickname, weight_class)
         return
 
     msg = bot.send_message(chat_id, "لطفاً ملیت مبارز را وارد کنید:")
@@ -482,54 +482,60 @@ def process_fighter_gym(message, full_name, nickname, weight_class, age, nationa
             if conn:
                 conn.close()
 
-@bot.message_handler(func=lambda message: message.text == 'اضافه کردن کتاب')
+# ------------------------------ ADD GYM HANDLER ------------------------------
+
+@bot.message_handler(func=lambda message: message.text == 'اضافه کردن باشگاه')
 @login_required
-def add_book_command(message):
+def add_member_command(message):
     chat_id = message.chat.id
-    msg = bot.send_message(chat_id, "لطفاً عنوان کتاب را وارد کنید:")
-    bot.register_next_step_handler(msg, process_book_title)
+    msg = bot.send_message(chat_id, "لطفاً نام باشگاه را وارد کنید:", reply_markup=cancel_keyboard())
+    bot.register_next_step_handler(msg, process_gym_name)
 
-def process_book_title(message):
+def process_gym_name(message):
     chat_id = message.chat.id
-    title = message.text.strip()
-    
-    if not title or len(title) < 2:
-        bot.send_message(chat_id, "عنوان وارد شده معتبر نیست.")
+    full_name = message.text.strip()
+
+    if full_name == "لغو عملیات":
+        cancel_process(message)
         return
     
-    msg = bot.send_message(chat_id, "لطفاً نام نویسنده را وارد کنید:")
-    bot.register_next_step_handler(msg, process_book_author, title)
+    if not full_name or len(full_name) < 2:
+        msg = bot.send_message(chat_id, "نام وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
+        bot.register_next_step_handler(msg, process_gym_name)
+        return
 
-def process_book_author(message, title):
+    msg = bot.send_message(chat_id, "لطفاً مکان باشگاه را وارد کنید:")
+    bot.register_next_step_handler(msg, process_gym_location, full_name)
+
+def process_gym_location(message, full_name):
     chat_id = message.chat.id
-    author = message.text.strip()
-    
-    if not author or len(author) < 2:
-        bot.send_message(chat_id, "نام نویسنده معتبر نیست.")
+    location = message.text.strip()
+
+    if location == "لغو عملیات":
+        cancel_process(message)
+        return
+
+    if not location:
+        msg = bot.send_message(chat_id, "مکان وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
+        bot.register_next_step_handler(msg, process_gym_location, full_name)
+        return
+
+    msg = bot.send_message(chat_id, "لطفاً نام صاحب باشگاه را وارد کنید:")
+    bot.register_next_step_handler(msg, process_gym_owner, full_name, location)
+
+def process_gym_owner(message, full_name, location):
+    chat_id = message.chat.id
+    owner_name = message.text.strip()
+
+    if owner_name == "لغو عملیات":
+        cancel_process(message)
         return
     
-    msg = bot.send_message(chat_id, "لطفاً تعداد نسخه‌های کتاب را وارد کنید (پیش‌فرض: 1):")
-    bot.register_next_step_handler(msg, process_book_copies, title, author)
+    if not owner_name or len(owner_name) < 2:
+        msg = bot.send_message(chat_id, "نام وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید.")
+        bot.register_next_step_handler(msg, process_gym_name)
+        return
 
-def process_book_copies(message, title, author):
-    chat_id = message.chat.id
-    copies_text = message.text.strip()
-    
-    try:
-        copies = int(copies_text) if copies_text else 1
-        if copies < 1:
-            copies = 1
-    except:
-        copies = 1
-    
-    msg = bot.send_message(chat_id, "لطفاً سال انتشار کتاب را وارد کنید (اختیاری):")
-    bot.register_next_step_handler(msg, process_book_year, title, author, copies)
-
-def process_book_year(message, title, author, copies):
-    chat_id = message.chat.id
-    year_text = message.text.strip()
-    year = int(year_text) if year_text and year_text.isdigit() else None
-    
     conn = get_db_connection()
     if conn is None:
         bot.send_message(chat_id, "خطا در اتصال به پایگاه داده.")
@@ -538,18 +544,18 @@ def process_book_year(message, title, author, copies):
     try:
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO books (title, author, total_copies, available_copies, publication_year)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id
-        """, (title, author, copies, copies, year))
-        
-        book_id = cur.fetchone()[0]
+            INSERT INTO gym (name, location, owner_name)
+            VALUES (%s, %s, %s)
+            RETURNING gym_id
+        """, (full_name, location, owner_name))
+
+        gym_id = cur.fetchone()[0]
         conn.commit()
-        
-        bot.send_message(chat_id, f"کتاب جدید با موفقیت ثبت شد!\nکد کتاب: {book_id}")
+
+        bot.send_message(chat_id, f"باشگاه جدید با موفقیت ثبت شد!\nشناسه باشگاه: {gym_id}", reply_markup=main_menu())
         cur.close()
     except Error as e:
-        bot.send_message(chat_id, f"خطا در ثبت کتاب: {e}")
+        bot.send_message(chat_id, f"خطا در ثبت باشگاه:\n{e}", reply_markup=main_menu())
     finally:
         if conn:
             conn.close()
