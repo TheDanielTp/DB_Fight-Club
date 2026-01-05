@@ -149,6 +149,26 @@ def get_gym_id_by_name(gym_name):
         cursor.close() # type: ignore
         connection.close()
 
+def get_gym_name_by_id(gym_id):
+    connection = get_db_connection()
+    if not connection:
+        return None
+
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            "SELECT name FROM gym WHERE gym_id = %s;",
+            (gym_id,)
+        )
+        row = cursor.fetchone()
+        return row[0] if row else None
+    except Error as e:
+        print(f"DB error: {e}")
+        return None
+    finally:
+        cursor.close() # type: ignore
+        connection.close()
+
 def get_fighter_id_by_name(fighter_name):
     connection = get_db_connection()
     if not connection:
@@ -390,7 +410,7 @@ def show_fighters(message):
             response += f"سن: {fighter[4]}\n"
             response += f"ملیت: {fighter[5]}\n"
             response += f"وضعیت: {status_dict.get(fighter[6], 'نامشخص')}\n"
-            response += f"باشگاه: {get_gym_by_id(fighter[7])[0] or 'ثبت نشده'}\n" # type: ignore
+            response += f"باشگاه: {get_gym_name_by_id(fighter[7]) or 'ثبت نشده'}\n" # type: ignore
             response += "-" * 40 + "\n"
 
         bot.send_message(message.chat.id, response, parse_mode='Markdown')
@@ -1075,7 +1095,7 @@ def process_fighter_search(message):
             response += f"سن: {fighter[4]}\n"
             response += f"ملیت: {fighter[5]}\n"
             response += f"وضعیت: {status_dict.get(fighter[6], 'نامشخص')}\n"
-            response += f"باشگاه: {get_gym_by_id(fighter[7])[0] or 'ثبت نشده'}\n" # type: ignore
+            response += f"باشگاه: {get_gym_name_by_id(fighter[7]) or 'ثبت نشده'}\n" # type: ignore
             response += "-" * 40 + "\n"
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
