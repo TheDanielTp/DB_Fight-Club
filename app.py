@@ -1678,9 +1678,6 @@ def process_gym_update_confirmation(message, gym_id, field_name, new_value):
     finally:
         if conn:
             conn.close()
-        
-        if 'edit_data' in user_sessions[chat_id]:
-            del user_sessions[chat_id]['edit_data']
 
 @bot.message_handler(func=lambda message: message.text == 'ویرایش مربی')
 @login_required
@@ -1889,15 +1886,28 @@ def process_edit_event_field(message, event_id):
         cancel_process(message)
         return
     
+    field_mapping = {
+        "تاریخ شروع": "start_date",
+        "تاریخ پایان": "end_date",
+        "مکان": "location",
+        "نتیجه": "result"
+    }
+
+    if field not in field_mapping:
+        bot.send_message(chat_id, "فیلد نامعتبر است.", reply_markup=main_menu())
+        return
+    
+    field_name = field_mapping[field]
+    
     if field == "تاریخ شروع":
         msg = bot.send_message(chat_id, "لطفاً تاریخ و زمان جدید را وارد کنید (فرمت: YYYY-MM-DD HH:MM):", reply_markup=cancel_menu())
-        bot.register_next_step_handler(msg, process_edit_event_start_date, event_id, field)
+        bot.register_next_step_handler(msg, process_edit_event_start_date, event_id, field_name)
     elif field == "تاریخ پایان":
         msg = bot.send_message(chat_id, "لطفاً تاریخ و زمان جدید را وارد کنید (فرمت: YYYY-MM-DD HH:MM):", reply_markup=cancel_menu())
-        bot.register_next_step_handler(msg, process_edit_event_end_date, event_id, field)
+        bot.register_next_step_handler(msg, process_edit_event_end_date, event_id, field_name)
     elif field == "مکان":
         msg = bot.send_message(chat_id, "لطفاً مکان جدید را وارد کنید:", reply_markup=cancel_menu())
-        bot.register_next_step_handler(msg, process_edit_event_location, event_id, field)
+        bot.register_next_step_handler(msg, process_edit_event_location, event_id, field_name)
     elif field == "نتیجه":
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
         markup.add(types.KeyboardButton("برد مبارز اول"),
@@ -1907,11 +1917,11 @@ def process_edit_event_field(message, event_id):
                    types.KeyboardButton("لغو عملیات"))
         
         msg = bot.send_message(chat_id, "نتیجه جدید را انتخاب کنید:", reply_markup=markup)
-        bot.register_next_step_handler(msg, process_edit_event_result, event_id, field)
+        bot.register_next_step_handler(msg, process_edit_event_result, event_id, field_name)
     else:
         bot.send_message(chat_id, "فیلد نامعتبر است.", reply_markup=main_menu())
 
-def process_edit_event_start_date(message, event_id, field):
+def process_edit_event_start_date(message, event_id, field_name):
     chat_id = message.chat.id
     new_date_str = message.text.strip()
     
@@ -1921,12 +1931,12 @@ def process_edit_event_start_date(message, event_id, field):
     
     try:
         new_date = datetime.strptime(new_date_str, "%Y-%m-%d %H:%M")
-        confirm_update_event(message, event_id, field, new_date)
+        confirm_update_event(message, event_id, field_name, new_date)
     except ValueError:
         msg = bot.send_message(chat_id, "فرمت تاریخ اشتباه است. لطفاً مجدداً وارد کنید (فرمت: YYYY-MM-DD HH:MM):")
-        bot.register_next_step_handler(msg, process_edit_event_start_date, event_id, field)
+        bot.register_next_step_handler(msg, process_edit_event_start_date, event_id, field_name)
 
-def process_edit_event_end_date(message, event_id, field):
+def process_edit_event_end_date(message, event_id, field_name):
     chat_id = message.chat.id
     new_date_str = message.text.strip()
     
@@ -1937,11 +1947,7 @@ def process_edit_event_end_date(message, event_id, field):
     try:
         new_date = datetime.strptime(new_date_str, "%Y-%m-%d %H:%M")
         
-        # Store in session
-        user_sessions[chat_id]['edit_data']['field_name'] = 'end_date'
-        user_sessions[chat_id]['edit_data']['new_value'] = new_date
-        
-        confirm_update_event(message, event_id, field, new_date)
+        confirm_update_event(message, event_id, field_name, new_date)
     except ValueError:
         msg = bot.send_message(chat_id, "فرمت تاریخ اشتباه است. لطفاً مجدداً وارد کنید (فرمت: YYYY-MM-DD HH:MM):")
         bot.register_next_step_handler(msg, process_edit_event_end_date)
@@ -1958,10 +1964,6 @@ def process_edit_event_location(message, event_id, field_name):
         msg = bot.send_message(chat_id, "مکان وارد شده معتبر نیست. لطفاً مجدداً وارد کنید:")
         bot.register_next_step_handler(msg, process_edit_event_location)
         return
-    
-    # Store in session
-    user_sessions[chat_id]['edit_data']['field_name'] = 'location'
-    user_sessions[chat_id]['edit_data']['new_value'] = new_location
     
     confirm_update_event(message, event_id, field_name, new_location)
 
