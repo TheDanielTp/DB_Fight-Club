@@ -392,7 +392,6 @@ def show_fighters(message):
                    f.nationality, f.status, g.name as gym_name
             FROM fighter f
             LEFT JOIN gym g ON f.gym_id = g.gym_id
-            WHERE f.name ILIKE %s OR f.nickname ILIKE %s
             ORDER BY f.name
             LIMIT 50
         """)
