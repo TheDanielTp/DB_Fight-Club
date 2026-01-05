@@ -1365,6 +1365,10 @@ def process_trainer_search(message):
 
 # endregion
 
+# region ----------------------- Editing Handlers -----------------------
+
+# region ---------- Edit Fighter Handler -----------
+
 @bot.message_handler(func=lambda message: message.text == 'ویرایش مبارز')
 @login_required
 def edit_fighter_menu(message):
@@ -1547,6 +1551,10 @@ def process_fighter_update_confirmation(message, fighter_id, field_name, new_val
         if conn:
             conn.close()
 
+# endregion
+
+# region ------------ Edit Gym Handler -------------
+
 @bot.message_handler(func=lambda message: message.text == 'ویرایش باشگاه')
 @login_required
 def edit_gym_menu(message):
@@ -1701,6 +1709,10 @@ def process_gym_update_confirmation(message, gym_id, field_name, new_value):
         if conn:
             conn.close()
 
+# endregion
+
+# region ---------- Edit Trainer Handler -----------
+
 @bot.message_handler(func=lambda message: message.text == 'ویرایش مربی')
 @login_required
 def edit_trainer_menu(message):
@@ -1852,6 +1864,10 @@ def process_trainer_update_confirmation(message, trainer_id, field_name, new_val
     finally:
         if conn:
             conn.close()
+
+# endregion
+
+# region ----------- Edit Event Handler ------------
 
 @bot.message_handler(func=lambda message: message.text == 'ویرایش رویداد')
 @login_required
@@ -2100,6 +2116,10 @@ def process_event_update_confirmation(message, event_id, field_name, new_value):
     finally:
         if conn:
             conn.close()
+
+# endregion
+
+# endregion
 
 if __name__ == '__main__':
     create_tables()
