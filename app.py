@@ -390,7 +390,7 @@ def show_fighters(message):
             response += f"سن: {fighter[4]}\n"
             response += f"ملیت: {fighter[5]}\n"
             response += f"وضعیت: {status_dict.get(fighter[6], 'نامشخص')}\n"
-            response += f"باشگاه: {get_gym_by_id(fighter[7])['name'] or 'ثبت نشده'}\n" # type: ignore
+            response += f"باشگاه: {get_gym_by_id(fighter[7])[0] or 'ثبت نشده'}\n" # type: ignore
             response += "-" * 40 + "\n"
 
         bot.send_message(message.chat.id, response, parse_mode='Markdown')
@@ -1075,7 +1075,7 @@ def process_fighter_search(message):
             response += f"سن: {fighter[4]}\n"
             response += f"ملیت: {fighter[5]}\n"
             response += f"وضعیت: {status_dict.get(fighter[6], 'نامشخص')}\n"
-            response += f"باشگاه: {get_gym_by_id(fighter[7])['name'] or 'ثبت نشده'}\n" # type: ignore
+            response += f"باشگاه: {get_gym_by_id(fighter[7])[0] or 'ثبت نشده'}\n" # type: ignore
             response += "-" * 40 + "\n"
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
