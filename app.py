@@ -259,7 +259,7 @@ def show_fighters(message):
             response += f"سن: {fighter[4]}\n"
             response += f"ملیت: {fighter[5]}\n"
             response += f"وضعیت: {fighter[6]}\n"
-            response += "-" * 30 + "\n"
+            response += "-" * 40 + "\n"
 
         bot.send_message(message.chat.id, response, parse_mode='Markdown')
         cur.close()
@@ -298,7 +298,7 @@ def show_gyms(message):
             response += f"مکان: {gym[2]}\n"
             response += f"مالک: {gym[3]}\n"
             response += f"امتیاز شهرت: {gym[4]}\n"
-            response += "-" * 30 + "\n"
+            response += "-" * 40 + "\n"
         
         bot.send_message(message.chat.id, response, parse_mode='Markdown')
         cur.close()
@@ -337,7 +337,7 @@ def show_trainers(message):
             response += f"شناسه مربی: {trainer[0]}\n"
             response += f"تخصص: {trainer[2]}\n"
             response += f"باشگاه: {trainer[3] or 'ثبت نشده'}\n"
-            response += "-" * 30 + "\n"
+            response += "-" * 40 + "\n"
         
         bot.send_message(message.chat.id, response, parse_mode='Markdown')
         cur.close()
@@ -375,11 +375,11 @@ def show_events(message):
 
         response = "آخرین رویدادها:\n\n"
         for event in events:
-            response += f"🔹 **رویداد #{event[0]}**\n"
-            response += f"📅 تاریخ: {event[1].strftime('%Y-%m-%d %H:%M')}\n"
-            response += f"📍 مکان: {event[2]}\n"
-            response += f"🥊 مبارزین: {event[3]}\n"
-            response += "-" * 30 + "\n"
+            response += f"رویداد {event[0]}\n"
+            response += f"تاریخ: {event[1].strftime('%Y-%m-%d %H:%M')}\n"
+            response += f"مکان: {event[2]}\n"
+            response += f"مبارزین: {event[3]}\n"
+            response += "-" * 40 + "\n"
         
         bot.send_message(message.chat.id, response, parse_mode='Markdown')
         cur.close()
@@ -748,7 +748,7 @@ def process_fighter_search(message):
             response += f"ملیت: {fighter[5]}\n"
             response += f"وضعیت: {fighter[6]}\n"
             response += f"باشگاه: {fighter[7] or 'ثبت نشده'}\n"
-            response += "-" * 30 + "\n"
+            response += "-" * 40 + "\n"
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
         cur.close()
@@ -813,7 +813,7 @@ def process_gym_search(message):
             
             response += f"تعداد مبارزین: {fighter_count}\n"
             response += f"تعداد مربیان: {trainer_count}\n"
-            response += "-" * 30 + "\n"
+            response += "-" * 40 + "\n"
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
         cur.close()
@@ -872,7 +872,7 @@ def process_trainer_search(message):
             fighter_count = cur.fetchone()[0] # type: ignore
             
             response += f"تعداد شاگردان: {fighter_count}\n"
-            response += "-" * 30 + "\n"
+            response += "-" * 40 + "\n"
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=main_menu())
         cur.close()
