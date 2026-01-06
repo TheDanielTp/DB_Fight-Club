@@ -13,6 +13,9 @@
 <div align="center">
 A comprehensive Telegram bot for managing fight club database, built with Python and PostgreSQL.
 This bot provides a complete CRUD interface for managing the club through an intuitive interface.
+  
+[Open the Bot](https://t.me/DB_Fight_Club_bot)
+
 </div>
 <br>
 <div align="center">
@@ -39,6 +42,7 @@ This bot provides a complete CRUD interface for managing the club through an int
 - A Telegram Bot Token from @BotFather
 - Neon PostgreSQL or any PostgreSQL database
 
+[bot]: https://t.me/DB_Fight_Club_bot
 [contributors-shield]: https://img.shields.io/github/contributors/TheDanielTp/DB_Fight-Club.svg?style=for-the-badge
 [contributors-url]: https://github.com/TheDanielTp/DB_Fight-Club/graphs/contributors
 [CPP-url]: https://cplusplus.com/
