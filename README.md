@@ -21,28 +21,28 @@ This bot provides a complete CRUD interface for managing the club through an int
 - Session management for user persistence
 
 ### 👥 Fighter Management
-- Add new fighters with detailed profiles (name, nickname, weight class, age, nationality, status, gym affiliation)
+- Add new fighters with detailed profiles
 - View all fighters with pagination
 - Search fighters by name or nickname
 - Edit fighter information
 - Delete fighters (with proper cascade handling)
 
 ### 🏢 Gym Management
-- Create new gyms with location, owner, and reputation score
+- Create new gyms
 - Display gyms with fighter and trainer counts
 - Search gyms by name, location, or owner
 - Edit gym details
 - Delete gyms (preserving associated fighters and trainers)
 
 ### 🏋️ Trainer Management
-- Add trainers with specialties and gym assignments
+- Add trainers with specialties
 - View all trainers with student counts
 - Search trainers by name or specialty
 - Edit trainer information
 - Delete trainers (preserving associated fighters)
 
 ### 🏆 Event Management
-- Create fight events with dates, locations, and results
+- Create fight events
 - Display events with fighter matchups and results
 - Edit event details
 - Delete events (preserving fighter records)
