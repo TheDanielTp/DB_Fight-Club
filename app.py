@@ -765,12 +765,20 @@ def process_fighter_nationality(message, full_name, nickname, weight_class, age)
     chat_id = message.chat.id
     nationality = message.text.strip() if message.text else None
 
+    if nationality == "لغو عملیات":
+        cancel_process(message)
+        return
+
     msg = bot.send_message(chat_id, "لطفاً نام باشگاه مبارز را وارد کنید:")
     bot.register_next_step_handler(msg, process_fighter_gym, full_name, nickname, weight_class, age, nationality)
 
 def process_fighter_gym(message, full_name, nickname, weight_class, age, nationality):
     chat_id = message.chat.id
     gym_name = message.text.strip() if message.text else None
+
+    if gym_name == "لغو عملیات":
+        cancel_process(message)
+        return
 
     if not gym_name:
         msg = bot.send_message(chat_id, "نام وارد شده معتبر نیست. لطفاً مجدداً تلاش کنید:")
