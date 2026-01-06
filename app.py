@@ -87,12 +87,12 @@ def create_tables():
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS fighter_trainer (
-                ft_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY
+                ft_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                 fighter_id integer REFERENCES fighter(fighter_id) ON DELETE CASCADE,
                 trainer_id integer REFERENCES trainer(trainer_id) ON DELETE CASCADE,
                 start_date date NOT NULL DEFAULT CURRENT_DATE,
                 end_date date,
-                UNIQUE NULLS NOT DISTNICT (fighter_id, trainer_id, end_date)
+                UNIQUE NULLS NOT DISTINCT (fighter_id, trainer_id, end_date)
             );
         """)
 
