@@ -8,15 +8,21 @@
 [![MIT License][license-shield]][license-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 
-# Telegram Bot
-
+## ERD Diagram
 <div align="center">
+<img src="erd.png" alt="ERD" width="700"/>
+</div>
+
+## Built with
+[![Python][python-shield]][python-url] [![flask][flask-shield]][flask-url] [![PostgreSQL][postgresql-shield]][postgresql-url]
+
+## Telegram Bot
+
 A comprehensive Telegram bot for managing fight club database, built with Python and PostgreSQL.
 This bot provides a complete CRUD interface for managing the club through an intuitive interface.
   
 [Open the Bot](https://t.me/DB_Fight_Club_bot)
 
-</div>
 <br>
 <div align="center">
 <figure>
@@ -27,22 +33,13 @@ This bot provides a complete CRUD interface for managing the club through an int
 </figure>
 </div>
 
-## ERD Diagram
-<div align="center">
-<img src="erd.png" alt="ERD" width="700"/>
-</div>
-
-## Built with
-- Python 3.8+
-- Neon & PostgreSQL
-
-## Prerequisites
-- Python 3.8 or higher
-- PostgreSQL 15 or higher
-- A Telegram Bot Token from @BotFather
-- Neon PostgreSQL or any PostgreSQL database
-
 [bot]: https://t.me/DB_Fight_Club_bot
+[flask-shield]: https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=Flask&logoColor=white
+[flask-url]: https://flask.palletsprojects.com/en/stable
+[postgresql-shield]: https://img.shields.io/badge/postgresql-4169e1?style=for-the-badge&logo=postgresql&logoColor=white
+[postgresql-url]: https://www.postgresql.org/
+[python-shield]: https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54
+[python-url]: https://www.python.org/
 [contributors-shield]: https://img.shields.io/github/contributors/TheDanielTp/DB_Fight-Club.svg?style=for-the-badge
 [contributors-url]: https://github.com/TheDanielTp/DB_Fight-Club/graphs/contributors
 [CPP-url]: https://cplusplus.com/
