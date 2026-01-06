@@ -87,12 +87,19 @@ def create_tables():
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS fighter_trainer (
+                ft_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY
                 fighter_id integer REFERENCES fighter(fighter_id) ON DELETE CASCADE,
                 trainer_id integer REFERENCES trainer(trainer_id) ON DELETE CASCADE,
                 start_date date NOT NULL DEFAULT CURRENT_DATE,
                 end_date date,
-                PRIMARY KEY (fighter_id, trainer_id)
+                UNIQUE NULLS NOT DISTNICT (fighter_id, trainer_id, end_date)
             );
+        """)
+
+        cursor.execute("""
+            ALTER TABLE fighter_trainer
+            ADD CONSTRAINT check_date_order 
+            CHECK (end_date IS NULL OR end_date >= start_date);
         """)
 
         cursor.execute("""
@@ -863,8 +870,6 @@ def manage_trainer_fighters_menu(message):
 لطفاً یکی از گزینه‌ها را انتخاب کنید:
 """
     bot.send_message(chat_id, welcome_text, reply_markup=trainer_fighter_management_menu())
-
-# endregion
 
 # endregion
 
