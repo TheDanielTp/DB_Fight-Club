@@ -15,37 +15,8 @@ A comprehensive Telegram bot for managing fight club database, built with Python
 This bot provides a complete CRUD interface for managing the club through an intuitive interface.
 </div>
 
-## Features
-### 🔐 Authentication & Security
-- Secure login system with username/password authentication
-- Session management for user persistence
-
-### 👥 Fighter Management
-- Add new fighters with detailed profiles
-- View all fighters with pagination
-- Search fighters by name or nickname
-- Edit fighter information
-- Delete fighters (with proper cascade handling)
-
-### 🏢 Gym Management
-- Create new gyms
-- Display gyms with fighter and trainer counts
-- Search gyms by name, location, or owner
-- Edit gym details
-- Delete gyms (preserving associated fighters and trainers)
-
-### 🏋️ Trainer Management
-- Add trainers with specialties
-- View all trainers with student counts
-- Search trainers by name or specialty
-- Edit trainer information
-- Delete trainers (preserving associated fighters)
-
-### 🏆 Event Management
-- Create fight events
-- Display events with fighter matchups and results
-- Edit event details
-- Delete events (preserving fighter records)
+## ERD Diagram
+![ERD Diagram](DB_Fight-Club_ERD.png)
 
 ## Built with
 - Python 3.8+
