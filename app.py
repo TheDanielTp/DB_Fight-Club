@@ -2681,10 +2681,19 @@ def process_delete_fighter_id(message):
         bot.send_message(chat_id, "مبارزی با این شناسه یافت نشد.", reply_markup=delete_menu())
         return
     
-    response = f"اطلاعات مبارز مورد نظر: نام: {fighter['name']} شناسه: {fighter_id} رده وزنی: {fighter['weight_class']} سن: {fighter['age']} وضعیت: {fighter['status']} باشگاه: {fighter['gym_name'] or 'ثبت نشده'} آیا مطمئن هستید که می‌خواهید این مبارز را حذف کنید؟"
+    response = f"""اطلاعات مبارز مورد نظر:
+    نام: {fighter['name']}
+    شناسه: {fighter_id}
+    رده وزنی: {fighter['weight_class']}
+    سن: {fighter['age']}
+    وضعیت: {fighter['status']}
+    باشگاه: {fighter['gym_name'] or 'ثبت نشده'}
+    
+    آیا مطمئن هستید که می‌خواهید این مبارز را حذف کنید؟"""
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(types.KeyboardButton("بله، حذف کن"), types.KeyboardButton("خیر، لغو کن"), types.KeyboardButton("لغو عملیات"))
+    markup.add(types.KeyboardButton("بله، حذف کن"),
+               types.KeyboardButton("خیر، لغو کن"))
     
     msg = bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
     bot.register_next_step_handler(msg, confirm_delete_fighter, fighter_id)
@@ -2745,10 +2754,17 @@ def process_delete_trainer_id(message):
         bot.send_message(chat_id, "مربی‌ای با این شناسه یافت نشد.", reply_markup=delete_menu())
         return
     
-    response = f"اطلاعات مربی مورد نظر: نام: {trainer['name']} شناسه: {trainer_id} تخصص: {trainer['specialty']} باشگاه: {trainer['gym_name'] or 'ثبت نشده'} آیا مطمئن هستید که می‌خواهید این مربی را حذف کنید؟"
+    response = f"""اطلاعات مربی مورد نظر:
+    نام: {trainer['name']}
+    شناسه: {trainer_id}
+    تخصص: {trainer['specialty']}
+    باشگاه: {trainer['gym_name'] or 'ثبت نشده'}
+    
+    آیا مطمئن هستید که می‌خواهید این مربی را حذف کنید؟"""
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(types.KeyboardButton("بله، حذف کن"), types.KeyboardButton("خیر، لغو کن"), types.KeyboardButton("لغو عملیات"))
+    markup.add(types.KeyboardButton("بله، حذف کن"),
+               types.KeyboardButton("خیر، لغو کن"))
     
     msg = bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
     bot.register_next_step_handler(msg, confirm_delete_trainer, trainer_id)
@@ -2822,10 +2838,20 @@ def process_delete_gym_id(message):
         cur.execute("SELECT COUNT(*) FROM trainer WHERE gym_id = %s", (gym_id,))
         trainer_count = cur.fetchone()[0] # type: ignore
         
-        response = f"اطلاعات باشگاه مورد نظر: نام: {gym['name']} شناسه: {gym_id} مکان: {gym['location']} مالک: {gym['owner']} امتیاز شهرت: {gym['reputation_score']} تعداد مبارزین: {fighter_count} تعداد مربیان: {trainer_count} آیا مطمئن هستید که می‌خواهید این باشگاه را حذف کنید؟"
+        response = f"""اطلاعات باشگاه مورد نظر:
+        نام: {gym['name']}
+        شناسه: {gym_id}
+        مکان: {gym['location']}
+        مالک: {gym['owner']}
+        امتیاز شهرت: {gym['reputation_score']}
+        تعداد مبارزین: {fighter_count}
+        تعداد مربیان: {trainer_count}
+        
+        آیا مطمئن هستید که می‌خواهید این باشگاه را حذف کنید؟"""
         
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-        markup.add(types.KeyboardButton("بله، حذف کن"), types.KeyboardButton("خیر، لغو کن"), types.KeyboardButton("لغو عملیات"))
+        markup.add(types.KeyboardButton("بله، حذف کن"),
+                   types.KeyboardButton("خیر، لغو کن"))
         
         msg = bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
         bot.register_next_step_handler(msg, confirm_delete_gym, gym_id, fighter_count, trainer_count)
@@ -2865,7 +2891,9 @@ def confirm_delete_gym(message, gym_id, fighter_count, trainer_count):
         
         conn.commit()
         
-        response = f"باشگاه با شناسه {gym_id} با موفقیت حذف شد. باشگاه {fighters_updated} مبارز روی NULL تنظیم شد. باشگاه {trainers_updated} مربی روی NULL تنظیم شد."
+        response = f"""باشگاه با شناسه {gym_id} با موفقیت حذف شد.
+        باشگاه {fighters_updated} مبارز روی NULL تنظیم شد.
+        باشگاه {trainers_updated} مربی روی NULL تنظیم شد."""
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=delete_menu())
         cur.close()
@@ -2902,10 +2930,18 @@ def process_delete_event_id(message):
         bot.send_message(chat_id, "رویدادی با این شناسه یافت نشد.", reply_markup=delete_menu())
         return
     
-    response = f"اطلاعات رویداد مورد نظر: شناسه رویداد: {event_id} تاریخ: {event['start_date'].strftime('%Y-%m-%d %H:%M')} مکان: {event['location']} مبارزین: {event['fighter1_name']} vs {event['fighter2_name']} نتیجه: {event['fighter1_name']} ({event['fighter1_result']}) - {event['fighter2_name']} ({event['fighter2_result']}) آیا مطمئن هستید که می‌خواهید این رویداد را حذف کنید؟"
+    response = f"""اطلاعات رویداد مورد نظر:
+    شناسه رویداد: {event_id}
+    تاریخ: {event['start_date'].strftime('%Y-%m-%d %H:%M')}
+    مکان: {event['location']}
+    مبارزین: {event['fighter1_name']} vs {event['fighter2_name']}
+    نتیجه: {event['fighter1_name']} ({event['fighter1_result']}) - {event['fighter2_name']} ({event['fighter2_result']})
+    
+    آیا مطمئن هستید که می‌خواهید این رویداد را حذف کنید؟"""
     
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add(types.KeyboardButton("بله، حذف کن"), types.KeyboardButton("خیر، لغو کن"), types.KeyboardButton("لغو عملیات"))
+    markup.add(types.KeyboardButton("بله، حذف کن"),
+               types.KeyboardButton("خیر، لغو کن"))
     
     msg = bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=markup)
     bot.register_next_step_handler(msg, confirm_delete_event, event_id)
@@ -2936,7 +2972,8 @@ def confirm_delete_event(message, event_id):
         
         conn.commit()
         
-        response = f"رویداد با شناسه {event_id} با موفقیت حذف شد. اطلاعات شرکت {participants_deleted} مبارز در رویداد حذف شد."
+        response = f"""رویداد با شناسه {event_id} با موفقیت حذف شد.
+        اطلاعات شرکت {participants_deleted} مبارز در رویداد حذف شد."""
         
         bot.send_message(chat_id, response, parse_mode='Markdown', reply_markup=delete_menu())
         cur.close()
