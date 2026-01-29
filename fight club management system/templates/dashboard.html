@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="page-title">DASHBOARD</h1>
+
+<div class="dashboard-grid">
+    <!-- Fighters Card -->
+    <div class="dashboard-card">
+        <h2 class="card-title">👊 Fighters Management</h2>
+        <div class="action-grid">
+            <a href="{{ url_for('fighters') }}" class="action-btn">View Fighters</a>
+            <button class="action-btn" onclick="showAddModal('fighter')">Add Fighter</button>
+            <button class="action-btn" onclick="showUpdateModal('fighter')">Update Fighter</button>
+            <button class="action-btn" onclick="showDeleteModal('fighter')">Delete Fighter</button>
+        </div>
+    </div>
+    
+    <!-- Gyms Card -->
+    <div class="dashboard-card">
+        <h2 class="card-title">🏋️ Gyms Management</h2>
+        <div class="action-grid">
+            <a href="{{ url_for('gyms') }}" class="action-btn">View Gyms</a>
+            <button class="action-btn" onclick="showAddModal('gym')">Add Gym</button>
+            <button class="action-btn" onclick="showUpdateModal('gym')">Update Gym</button>
+            <button class="action-btn" onclick="showDeleteModal('gym')">Delete Gym</button>
+        </div>
+    </div>
+    
+    <!-- Trainers Card -->
+    <div class="dashboard-card">
+        <h2 class="card-title">🥋 Trainers Management</h2>
+        <div class="action-grid">
+            <a href="{{ url_for('trainers') }}" class="action-btn">View Trainers</a>
+            <button class="action-btn" onclick="showAddModal('trainer')">Add Trainer</button>
+            <button class="action-btn" onclick="showUpdateModal('trainer')">Update Trainer</button>
+            <button class="action-btn" onclick="showDeleteModal('trainer')">Delete Trainer</button>
+        </div>
+    </div>
+    
+    <!-- Matches Card -->
+    <div class="dashboard-card">
+        <h2 class="card-title">🥊 Matches Management</h2>
+        <div class="action-grid">
+            <a href="{{ url_for('matches') }}" class="action-btn">View Matches</a>
+            <button class="action-btn" onclick="showAddModal('match')">Add Match</button>
+            <button class="action-btn" onclick="showUpdateModal('match')">Update Match</button>
+            <button class="action-btn" onclick="showDeleteModal('match')">Delete Match</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="close-btn" onclick="closeAddModal()">&times;</span>
+        <div id="addModalBody"></div>
+    </div>
+</div>
+
+<!-- Update Modal -->
+<div id="updateModal" class="modal">
+    <div class="modal-content" style="max-width: 800px;">
+        <span class="close-btn" onclick="closeUpdateModal()">&times;</span>
+        <div id="updateModalBody"></div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+        <div id="deleteModalBody"></div>
+    </div>
+</div>
+
+<script>
+function showAddModal(entityType) {
+    const modal = document.getElementById('addModal');
+    const modalBody = document.getElementById('addModalBody');
+    
+    fetch(`/static/html/add_${entityType}.html`)
+        .then(response => response.text())
+        .then(html => {
+            modalBody.innerHTML = html;
+            modal.style.display = 'block';
+            attachAddFormListener(entityType);
+        })
+        .catch(() => {
+            modalBody.innerHTML = `
+                <h2 style="color: var(--gold); margin-bottom: 1rem;">Add ${capitalizeFirst(entityType)}</h2>
+                <p style="color: var(--paper);">Form template not found. Please use the specific ${entityType} page.</p>
+            `;
+            modal.style.display = 'block';
+        });
+}
+
+function showUpdateModal(entityType) {
+    const modal = document.getElementById('updateModal');
+    const modalBody = document.getElementById('updateModalBody');
+    
+    // Load search interface
+    modalBody.innerHTML = `
+        <h2 style="color: var(--gold); margin-bottom: 1rem;">Update ${capitalizeFirst(entityType)}</h2>
+        <div class="search-container" style="margin-bottom: 2rem;">
+            <input type="search" id="updateSearch" class="search-input" placeholder="Search ${entityType}s...">
+            <button class="search-btn" onclick="searchForUpdate('${entityType}')">Search</button>
+        </div>
+        <div id="updateResults"></div>
+    `;
+    modal.style.display = 'block';
+}
+
+function showDeleteModal(entityType) {
+    const modal = document.getElementById('deleteModal');
+    const modalBody = document.getElementById('deleteModalBody');
+    
+    modalBody.innerHTML = `
+        <h2 style="color: var(--gold); margin-bottom: 1rem;">Delete ${capitalizeFirst(entityType)}</h2>
+        <div class="search-container" style="margin-bottom: 2rem;">
+            <input type="search" id="deleteSearch" class="search-input" placeholder="Search ${entityType}s...">
+            <button class="search-btn" onclick="searchForDelete('${entityType}')">Search</button>
+        </div>
+        <div id="deleteResults"></div>
+    `;
+    modal.style.display = 'block';
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function closeUpdateModal() {
+    document.getElementById('updateModal').style.display = 'none';
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+function capitalizeFirst(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
+
+function attachAddFormListener(entityType) {
+    const form = document.getElementById(`add${capitalizeFirst(entityType)}Form`);
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitAddForm(entityType, this);
+        });
+    }
+}
+
+function submitAddForm(entityType, form) {
+    const formData = new FormData(form);
+    
+    fetch(`/api/add/${entityType}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`${capitalizeFirst(entityType)} added successfully!`);
+            closeAddModal();
+            window.location.reload();
+        } else {
+            alert(data.error || `Failed to add ${entityType}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred');
+    });
+}
+
+function searchForUpdate(entityType) {
+    const searchTerm = document.getElementById('updateSearch').value;
+    const resultsDiv = document.getElementById('updateResults');
+    
+    fetch(`/${entityType}s?search=${encodeURIComponent(searchTerm)}&json=1`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                resultsDiv.innerHTML = '<p style="color: var(--paper);">No results found</p>';
+                return;
+            }
+            
+            let html = '<div class="items-grid">';
+            data.forEach(item => {
+                html += `
+                    <div class="item-card" onclick="loadUpdateForm('${entityType}', ${item[`${entityType}_id`]})">
+                        <div class="item-title">${getItemTitle(entityType, item)}</div>
+                        <div class="item-subtitle">${getItemSubtitle(entityType, item)}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        })
+        .catch(() => {
+            resultsDiv.innerHTML = '<p style="color: var(--paper);">Error searching</p>';
+        });
+}
+
+function searchForDelete(entityType) {
+    const searchTerm = document.getElementById('deleteSearch').value;
+    const resultsDiv = document.getElementById('deleteResults');
+    
+    fetch(`/${entityType}s?search=${encodeURIComponent(searchTerm)}&json=1`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                resultsDiv.innerHTML = '<p style="color: var(--paper);">No results found</p>';
+                return;
+            }
+            
+            let html = '<div class="items-grid">';
+            data.forEach(item => {
+                html += `
+                    <div class="item-card" onclick="confirmDeleteItem('${entityType}', ${item[`${entityType}_id`]}, '${getItemTitle(entityType, item)}')">
+                        <div class="item-title">${getItemTitle(entityType, item)}</div>
+                        <div class="item-subtitle">${getItemSubtitle(entityType, item)}</div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        })
+        .catch(() => {
+            resultsDiv.innerHTML = '<p style="color: var(--paper);">Error searching</p>';
+        });
+}
+
+function getItemTitle(entityType, item) {
+    switch(entityType) {
+        case 'fighter':
+            return `${item.name} "${item.nickname || 'No Nickname'}"`;
+        case 'gym':
+            return item.name;
+        case 'trainer':
+            return item.name;
+        case 'match':
+            return `Match #${item.match_id}`;
+        default:
+            return 'Unknown';
+    }
+}
+
+function getItemSubtitle(entityType, item) {
+    switch(entityType) {
+        case 'fighter':
+            return item.weight_class;
+        case 'gym':
+            return item.owner;
+        case 'trainer':
+            return item.specialty;
+        case 'match':
+            return new Date(item.start_date).toLocaleDateString();
+        default:
+            return '';
+    }
+}
+
+function loadUpdateForm(entityType, id) {
+    window.location.href = `/${entityType}s#edit-${id}`;
+}
+
+function confirmDeleteItem(entityType, id, name) {
+    if (confirm(`Are you sure you want to delete "${name}"?`)) {
+        fetch(`/api/delete/${entityType}/${id}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Deleted successfully!');
+                closeDeleteModal();
+                window.location.reload();
+            } else {
+                alert(data.error || 'Delete failed');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+</script>
+{% endblock %}
