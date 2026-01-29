@@ -1,9 +1,10 @@
 import os
-from datetime import datetime, date
 import psycopg2
 from psycopg2 import Error
+from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
-from typing import cast
+
+load_dotenv()
 
 class Database:
     def __init__(self):
@@ -40,7 +41,7 @@ class Database:
                 return result
             
         except Error as e:
-            print(f"Error in exection:\n{e}")
+            print(f"Error in execution:\n{e}")
             conn.rollback()
             raise
         finally:
@@ -139,8 +140,6 @@ class Database:
             if conn:
                 conn.close()
 
-    # region ==================== Get All Items ====================
-
     def get_all_gyms(self, limit=100):
         conn = self.get_connection()
         if conn is None:
@@ -185,7 +184,7 @@ class Database:
         finally:
             conn.close()
 
-    def get_all_trainers(self):
+    def get_all_trainers(self, limit=100):
         conn = self.get_connection()
         if conn is None:
             raise ConnectionError("Failed to connect to Database.")
@@ -195,8 +194,9 @@ class Database:
                 cur.execute("""
                     SELECT trainer_id, name, specialty, gym_id
                     FROM trainers
-                    ORDER BY trainer_id
-                """)
+                    ORDER BY trainer_id DESC
+                    LIMIT %s
+                """, (limit,))
 
                 return cur.fetchall()
 
@@ -206,7 +206,7 @@ class Database:
         finally:
             conn.close()
 
-    def get_all_matches(self):
+    def get_all_matches(self, limit=100):
         conn = self.get_connection()
         if conn is None:
             raise ConnectionError("Failed to connect to Database.")
@@ -216,8 +216,9 @@ class Database:
                 cur.execute("""
                     SELECT match_id, start_date, end_date, duration, location
                     FROM match_events
-                    ORDER BY match_id
-                """)
+                    ORDER BY match_id DESC
+                    LIMIT %s
+                """, (limit,))
 
                 return cur.fetchall()
 
@@ -226,8 +227,6 @@ class Database:
             return None
         finally:
             conn.close()
-
-    # endregion
 
     def get_gym(self, field="gym_id", value=1):
         conn = self.get_connection()
@@ -253,31 +252,7 @@ class Database:
             return None
         finally:
             conn.close()
-
-    def search_gyms(self, query, limit=100):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                query = f"%{query}%"
-                cur.execute("""
-                    SELECT gym_id, name, location, owner, reputation_score
-                    FROM gyms
-                    WHERE name ILIKE %s OR location ILIKE %s OR owner ILIKE %s
-                    ORDER BY gym_id DESC
-                    LIMIT %s
-                """, (query, query, query, limit))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
+    
     def get_gym_by_reputation(self, min_score=0, max_score=100):
         conn = self.get_connection()
         if conn is None:
@@ -299,8 +274,357 @@ class Database:
             return None
         finally:
             conn.close()
+    
+    def get_gym_fighters(self, gym_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT fighter_id, name, nickname, weight_class, height, age, nationality, status, gym_id
+                    FROM fighters
+                    WHERE gym_id = %s
+                """, (gym_id,))
 
-    # region ====================== Add Items ======================
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_gym_trainers(self, gym_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT trainer_id, name, specialty, gym_id
+                    FROM trainers
+                    WHERE gym_id = %s
+                """, (gym_id,))
+
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_fighter(self, field="fighter_id", value=1):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        valid_fields = ['fighter_id', 'name', 'nickname', 'weight_class', 'height', 'age', 'nationality', 'status', 'gym_id']
+        if field not in valid_fields:
+            raise ValueError(f"Invalid field name: {field}")
+
+        try:
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    SELECT fighter_id, name, nickname, weight_class, height, age, nationality, status, gym_id
+                    FROM fighters
+                    WHERE {field} = %s 
+                """, (value,))
+
+                return cur.fetchone()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_fighter_with_record(self, fighter_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT f.*, fr.wins, fr.losses, fr.draws
+                    FROM fighters f
+                    LEFT JOIN fighter_records fr ON f.fighter_id = fr.fighter_id
+                    WHERE f.fighter_id = %s
+                """, (fighter_id,))
+
+                return cur.fetchone()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_fighter_trainers(self, fighter_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT t.trainer_id, t.name, t.specialty, t.gym_id, ft.start_date, ft.end_date
+                    FROM trainers t
+                    JOIN fighter_trainer ft ON ft.trainer_id = t.trainer_id
+                    WHERE ft.fighter_id = %s
+                    ORDER BY
+                        CASE WHEN ft.end_date IS NULL THEN 0 ELSE 1 END,
+                        ft.end_date DESC
+                """, (fighter_id,))
+
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_fighter_matches(self, fighter_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT m.match_id, m.start_date, m.end_date, m.duration, m.location,
+                           p.result as fighter_result
+                    FROM match_events m
+                    JOIN participants p ON m.match_id = p.match_id
+                    WHERE p.fighter_id = %s
+                    ORDER BY m.start_date DESC
+                """, (fighter_id,))
+
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_trainer(self, field="trainer_id", value=1):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        valid_fields = ['trainer_id', 'name', 'specialty', 'gym_id']
+        if field not in valid_fields:
+            raise ValueError(f"Invalid field name: {field}")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    SELECT trainer_id, name, specialty, gym_id
+                    FROM trainers
+                    WHERE {field} = %s
+                """, (value,))
+
+                return cur.fetchone()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_trainer_fighters(self, trainer_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT f.fighter_id, f.name, f.nickname, f.weight_class, f.height, f.age, f.nationality, f.status, f.gym_id, ft.start_date, ft.end_date
+                    FROM fighters f
+                    JOIN fighter_trainer ft ON ft.fighter_id = f.fighter_id
+                    WHERE ft.trainer_id = %s
+                    ORDER BY 
+                        CASE WHEN ft.end_date IS NULL THEN 0 ELSE 1 END,
+                        ft.end_date DESC
+                """, (trainer_id,))
+
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_match_fighters(self, match_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT 
+                        m.match_id,
+                        f1.fighter_id as fighter1_id,
+                        f1.name as fighter1_name,
+                        f1.nickname as fighter1_nickname,
+                        p1.result as fighter1_result,
+                        f2.fighter_id as fighter2_id,
+                        f2.name as fighter2_name,
+                        f2.nickname as fighter2_nickname,
+                        p2.result as fighter2_result
+                    FROM match_events m
+                    JOIN participants p1 ON m.match_id = p1.match_id
+                    JOIN participants p2 ON m.match_id = p2.match_id
+                    JOIN fighters f1 ON p1.fighter_id = f1.fighter_id
+                    JOIN fighters f2 ON p2.fighter_id = f2.fighter_id
+                    WHERE m.match_id = %s AND p1.fighter_id < p2.fighter_id
+                    LIMIT 1
+                """, (match_id,))
+
+                return cur.fetchone()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_match_by_date(self, start_date, end_date, limit=100):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database")
+        
+        if end_date < start_date:
+            raise ValueError("End Date can't be earlier than Start Date.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT match_id, start_date, end_date, duration, location
+                    FROM match_events
+                    WHERE start_date BETWEEN %s AND %s
+                    LIMIT %s
+            """, (start_date, end_date, limit))
+                
+                return cur.fetchall()
+        
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def search_gyms(self, search_term, limit=100):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                search_term = f"%{search_term}%"
+                cur.execute("""
+                    SELECT gym_id, name, location, owner, reputation_score
+                    FROM gyms
+                    WHERE name ILIKE %s OR location ILIKE %s OR owner ILIKE %s
+                    ORDER BY gym_id DESC
+                    LIMIT %s
+                """, (search_term, search_term, search_term, limit))
+
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def search_fighters(self, search_term, limit=100):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                search_term = f"%{search_term}%"
+                cur.execute("""
+                    SELECT fighter_id, name, nickname, weight_class, height, age, nationality, status, gym_id
+                    FROM fighters
+                    WHERE name ILIKE %s OR nickname ILIKE %s
+                    ORDER BY fighter_id DESC
+                    LIMIT %s
+                """, (search_term, search_term, limit))
+
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def search_trainers(self, search_term, limit=100):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                search_term = f"%{search_term}%"
+                cur.execute("""
+                    SELECT trainer_id, name, specialty, gym_id
+                    FROM trainers
+                    WHERE name ILIKE %s OR specialty ILIKE %s
+                    ORDER BY trainer_id DESC
+                    LIMIT %s
+                """, (search_term, search_term, limit))
+
+                return cur.fetchall()
+
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def search_matches(self, search_term, limit=100):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                search_term = f"%{search_term}%"
+                cur.execute("""
+                    SELECT m.match_id, m.start_date, m.end_date, m.duration, m.location,
+                            f1.name as fighter1_name, f2.name as fighter2_name,
+                            f1.nickname as fighter1_nickname, f2.nickname as fighter2_nickname
+                    FROM match_events m
+                    JOIN participants p1 ON p1.match_id = m.match_id
+                    JOIN participants p2 ON p2.match_id = m.match_id
+                    JOIN fighters f1 ON p1.fighter_id = f1.fighter_id
+                    JOIN fighters f2 ON p2.fighter_id = f2.fighter_id
+                    WHERE (f1.name ILIKE %s OR f2.name ILIKE %s
+                            OR f1.nickname ILIKE %s OR f2.nickname ILIKE %s OR m.location ILIKE %s)
+                            AND p1.fighter_id < p2.fighter_id
+                    LIMIT %s
+                """, (search_term, search_term, search_term, search_term, search_term, limit))
+
+                return cur.fetchall()
+            
+        except Error as e:
+            print(f"Error fetching information:\n{e}")
+            return None
+        finally:
+            conn.close()
 
     def create_gym(self, name, location, owner, reputation_score=75):
         conn = self.get_connection()
@@ -315,7 +639,7 @@ class Database:
                     RETURNING gym_id
                 """, (name, location, owner, reputation_score))
 
-                gym_id = cur.fetchone()[0] # type: ignore
+                gym_id = cur.fetchone()['gym_id'] # type: ignore
                 conn.commit()
                 return gym_id
 
@@ -388,7 +712,7 @@ class Database:
                     RETURNING fighter_id
                 """, (name, nickname, weight_class, height, age, nationality, status, gym_id))
 
-                fighter_id = cur.fetchone()[0] # type: ignore
+                fighter_id = cur.fetchone()['fighter_id'] # type: ignore
 
                 cur.execute("""
                     INSERT INTO fighter_records (fighter_id, wins, losses, draws)
@@ -467,7 +791,7 @@ class Database:
                     RETURNING trainer_id
                 """, (name, specialty, gym_id))
 
-                trainer_id = cur.fetchone()[0] # type: ignore
+                trainer_id = cur.fetchone()['trainer_id'] # type: ignore
                 conn.commit()
                 return trainer_id
 
@@ -527,254 +851,17 @@ class Database:
         finally:
             conn.close()
 
-
-
-
-    def get_gym_fighters(self, gym_id):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT fighter_id, name, nickname, weight_class, height, age, nationality, status, gym_id
-                    FROM fighters
-                    WHERE gym_id = %s
-                """, (gym_id,))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_gym_trainers(self, gym_id):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT trainer_id, name, specialty, gym_id
-                    FROM trainers
-                    WHERE gym_id = %s
-                """, (gym_id,))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_fighter(self, field="fighter_id", value=1):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        valid_fields = ['fighter_id', 'name', 'nickname', 'weight_class', 'height', 'age', 'nationality', 'status', 'gym_id']
-        if field not in valid_fields:
-            raise ValueError(f"Invalid field name: {field}")
-
-        try:
-            with conn.cursor() as cur:
-                cur.execute(f"""
-                    SELECT fighter_id, name, nickname, weight_class, height, age, nationality, status, gym_id
-                    FROM fighters
-                    WHERE {field} = %s 
-                """, (value,))
-
-                return cur.fetchone()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def search_fighters(self, query, limit=100):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                query = f"%{query}%"
-                cur.execute("""
-                    SELECT fighter_id, name, nickname, weight_class, height, age, nationality, status, gym_id
-                    FROM fighters
-                    WHERE name ILIKE %s OR nickname ILIKE %s
-                    ORDER BY fighter_id DESC
-                    LIMIT %s
-                """, (query, query, limit))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_fighter_trainers(self, fighter_id):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT t.trainer_id, t.name, t.specialty, t.gym_id
-                    FROM trainers t
-                    LEFT JOIN fighter_trainer ft ON ft.trainer_id = t.trainer_id AND ft.fighter_id = %s
-                    ORDER BY t.trainer_id
-                """, (fighter_id,))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_trainer(self, field="trainer_id", value=1):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        valid_fields = ['trainer_id', 'name', 'specialty', 'gym_id']
-        if field not in valid_fields:
-            raise ValueError(f"Invalid field name: {field}")
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute(f"""
-                    SELECT trainer_id, name, specialty, gym_id
-                    FROM trainers
-                    WHERE {field} = %s
-                """, (value,))
-
-                return cur.fetchone()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def search_trainers(self, query, limit=100):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                query = f"%{query}%"
-                cur.execute("""
-                    SELECT trainer_id, name, specialty, gym_id
-                    FROM trainers
-                    WHERE name ILIKE %s OR specialty ILIKE %s
-                    ORDER BY trainer_id DESC
-                    LIMIT %s
-                """, (query, query, limit))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_trainer_fighters(self, trainer_id):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT f.fighter_id, f.name, f.nickname, f.weight_class, f.height, f.age, f.nationality, f.status, f.gym_id
-                    FROM fighters f
-                    LEFT JOIN fighter_trainer ft ON ft.fighter_id = f.fighter_id AND ft.trainer_id = %s
-                    ORDER BY f.fighter_id
-                """, (trainer_id,))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_match_info(self, match_id):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT 
-                        m.match_id,
-                        f1.fighter_id as fighter1_id,
-                        f1.name as fighter1_name,
-                        p1.result as fighter1_result,
-                        f2.fighter_id as fighter2_id,
-                        f2.name as fighter2_name,
-                        p2.result as fighter2_result
-                    FROM match_events m
-                    JOIN participants p1 ON m.match_id = p1.match_id
-                    JOIN participants p2 ON m.match_id = p2.match_id
-                    JOIN fighters f1 ON p1.fighter_id = f1.fighter_id
-                    JOIN fighters f2 ON p2.fighter_id = f2.fighter_id
-                    WHERE m.match_id = %s AND p1.fighter_id < p2.fighter_id
-                    LIMIT 1
-                """, (match_id,))
-
-                return cur.fetchone()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
-    def get_fighter_matches(self, fighter_id):
-        conn = self.get_connection()
-        if conn is None:
-            raise ConnectionError("Failed to connect to Database.")
-        
-        try:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT match_id, start_date, end_date, duration, location
-                    FROM match_events
-                    JOIN participants ON match_events.match_id = participants.match_id
-                    WHERE participants.fighter_id = %s
-                    ORDER BY match_id
-                """, (fighter_id,))
-
-                return cur.fetchall()
-
-        except Error as e:
-            print(f"Error fetching information:\n{e}")
-            return None
-        finally:
-            conn.close()
-
     def create_match(self, start_date, location, fighter1_id, fighter2_id, end_date, winner_id):
         conn = self.get_connection()
         if conn is None:
             raise ConnectionError("Failed to connect to Database.")
         
+        if fighter1_id == fighter2_id:
+            raise ValueError("Fighters can't fight themselves.")
+        
+        if end_date < start_date:
+            raise ValueError("End Date can't be earlier than Start Date.")
+
         try:
             with conn.cursor() as cur:
                 cur.execute("""
@@ -782,24 +869,23 @@ class Database:
                     VALUES (%s, %s, %s)
                     RETURNING match_id
                 """, (start_date, end_date, location))
-                match_id = cur.fetchone()[0] # type: ignore
+                match_id = cur.fetchone()['match_id'] # type: ignore
 
                 fighter1_result = None
                 fighter2_result = None
 
-                if winner_id is not None:
-                    if winner_id == fighter1_id:
-                        fighter1_result = "win"
-                        fighter2_result = "loss"
-                    elif winner_id == fighter2_id:
-                        fighter1_result = "loss"
-                        fighter2_result = "win"
-                    elif winner_id == 0:
-                        fighter1_result = "draw"
-                        fighter2_result = "draw"
-                    else:
-                        fighter1_result = "no contest"
-                        fighter2_result = "no contest"
+                if winner_id == fighter1_id:
+                    fighter1_result = "win"
+                    fighter2_result = "loss"
+                elif winner_id == fighter2_id:
+                    fighter1_result = "loss"
+                    fighter2_result = "win"
+                elif winner_id == 0:
+                    fighter1_result = "draw"
+                    fighter2_result = "draw"
+                else:
+                    fighter1_result = "no contest"
+                    fighter2_result = "no contest"
 
                 cur.execute("""
                     INSERT INTO participants (match_id, fighter_id, result)
@@ -826,13 +912,52 @@ class Database:
         finally:
             conn.close()
 
+    def update_match(self, match_id, field, value):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        valid_fields = ['start_date', 'location', 'end_date']
+        if field not in valid_fields:
+            raise ValueError(f"Invalid field name: {field}")
+
+        try:
+            with conn.cursor() as cur:
+                cur.execute(f"""
+                    UPDATE match_events
+                    SET {field} = %s
+                    WHERE match_id = %s
+                """, (value, match_id))
+
+                conn.commit()
+                return True
+            
+        except Error as e:
+            print(f"Error updating information:\n{e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
     def update_match_player(self, match_id, old_fighter_id, new_fighter_id):
         conn = self.get_connection()
         if conn is None:
             raise ConnectionError("Failed to connect to Database.")
         
+        if old_fighter_id == new_fighter_id:
+            raise ValueError("Old fighter and new fighter IDs cannot be the same.")
+
         try:
             with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT fighter_id 
+                    FROM participants 
+                    WHERE match_id = %s AND fighter_id = %s
+                """, (match_id, new_fighter_id))
+                
+                if cur.fetchone() is not None:
+                    raise ValueError(f"Fighter with ID {new_fighter_id} is already a participant in this match.")
+
                 cur.execute("""
                     SELECT result
                     FROM participants
@@ -840,9 +965,9 @@ class Database:
                 """, (match_id, old_fighter_id))
 
                 result = cur.fetchone()
-                result = result[0] if result else None
+                result = result["result"] if result else None # type: ignore
 
-                if not result:
+                if result is None:
                     raise ValueError(f"Fighter with ID: {old_fighter_id} did not participate in this match.")
 
                 if result == "win":
@@ -850,19 +975,19 @@ class Database:
                     UPDATE fighter_records
                     SET wins = wins - 1
                     WHERE fighter_id = %s    
-                """, (old_fighter_id))
+                """, (old_fighter_id,))
                 elif result == "draw":
                     cur.execute("""
                     UPDATE fighter_records
                     SET draws = draws - 1
                     WHERE fighter_id = %s    
-                """, (old_fighter_id))
+                """, (old_fighter_id,))
                 elif result == "loss":
                     cur.execute("""
                     UPDATE fighter_records
                     SET losses = losses - 1
                     WHERE fighter_id = %s    
-                """, (old_fighter_id))
+                """, (old_fighter_id,))
                     
                 self.add_fighter_record(conn, new_fighter_id, result)
 
@@ -876,7 +1001,7 @@ class Database:
                 return True
             
         except Error as e:
-            print(f"Error writing information:\n{e}")
+            print(f"Error updating information:\n{e}")
             conn.rollback()
             return False
         finally:
@@ -897,8 +1022,8 @@ class Database:
                 """, (match_id,))
 
                 fighters = cur.fetchall()
-                fighter1_id = cast(dict, fighters[0])["fighter_id"]
-                fighter2_id = cast(dict, fighters[1])["fighter_id"]
+                fighter1_id = fighters[0]["fighter_id"] # type: ignore
+                fighter2_id = fighters[1]["fighter_id"] # type: ignore
                 
                 fighter1_result = None
                 fighter2_result = None      
@@ -923,7 +1048,7 @@ class Database:
                 """, (match_id, fighter1_id))
 
                 current_fighter1_result = cur.fetchone()
-                current_fighter1_result = current_fighter1_result[0] if current_fighter1_result else None
+                current_fighter1_result = current_fighter1_result["result"] if current_fighter1_result else None # type: ignore
                 
                 cur.execute("""
                     SELECT result 
@@ -932,7 +1057,7 @@ class Database:
                 """, (match_id, fighter2_id))
 
                 current_fighter2_result = cur.fetchone()
-                current_fighter2_result = current_fighter2_result[0] if current_fighter2_result else None
+                current_fighter2_result = current_fighter2_result["result"] if current_fighter2_result else None # type: ignore
                 
                 cur.execute("""
                     UPDATE participants
@@ -958,7 +1083,7 @@ class Database:
                 return True
 
         except Error as e:
-            print(f"Error writing information:\n{e}")
+            print(f"Error updating information:\n{e}")
             conn.rollback()
             return False
         finally:
@@ -1012,7 +1137,7 @@ class Database:
             return False
         finally:
             conn.close()
-
+    
     def add_fighter_record(self, conn, fighter_id, result):
         if conn is None:
             raise ConnectionError("Failed to connect to Database.")
@@ -1061,7 +1186,6 @@ class Database:
                 elif current_result == "draw":
                     cur.execute("UPDATE fighter_records SET draws = draws - 1 WHERE fighter_id = %s", (fighter_id,))
                 
-                # Then, add the new result
                 if result == "win":
                     cur.execute("UPDATE fighter_records SET wins = wins + 1 WHERE fighter_id = %s", (fighter_id,))
                 elif result == "loss":
@@ -1072,8 +1196,123 @@ class Database:
                 return True
 
         except Error as e:
-            print(f"Error writing information:\n{e}")
+            print(f"Error updating information:\n{e}")
             conn.rollback()
             return False
+
+    def add_fighter_trainer(self, fighter_id, trainer_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
         
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO fighter_trainer (fighter_id, trainer_id, start_date)
+                    VALUES (%s, %s, CURRENT_DATE)
+                    RETURNING ft_id
+                """, (fighter_id, trainer_id))
+                
+                conn.commit()
+                return True
+        except Error as e:
+            print(f"Error adding trainer to fighter:\n{e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
+    def remove_fighter_trainer(self, fighter_id, trainer_id):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    UPDATE fighter_trainer 
+                    SET end_date = CURRENT_DATE
+                    WHERE fighter_id = %s AND trainer_id = %s AND end_date IS NULL
+                """, (fighter_id, trainer_id))
+                
+                conn.commit()
+                return True
+        except Error as e:
+            print(f"Error removing trainer from fighter:\n{e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
+    def get_all_fighters_without_gym(self):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT fighter_id, name, nickname
+                    FROM fighters
+                    WHERE gym_id IS NULL
+                    ORDER BY name
+                """)
+                return cur.fetchall()
+        except Error as e:
+            print(f"Error fetching fighters:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_all_fighters_without_trainer(self, trainer_id=None):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                if trainer_id:
+                    cur.execute("""
+                        SELECT f.fighter_id, f.name, f.nickname
+                        FROM fighters f
+                        WHERE f.fighter_id NOT IN (
+                            SELECT ft.fighter_id 
+                            FROM fighter_trainer ft 
+                            WHERE ft.trainer_id = %s AND ft.end_date IS NULL
+                        )
+                        ORDER BY f.name
+                    """, (trainer_id,))
+                else:
+                    cur.execute("""
+                        SELECT fighter_id, name, nickname
+                        FROM fighters
+                        ORDER BY name
+                    """)
+                return cur.fetchall()
+        except Error as e:
+            print(f"Error fetching fighters:\n{e}")
+            return None
+        finally:
+            conn.close()
+
+    def get_all_trainers_without_gym(self):
+        conn = self.get_connection()
+        if conn is None:
+            raise ConnectionError("Failed to connect to Database.")
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT trainer_id, name, specialty
+                    FROM trainers
+                    WHERE gym_id IS NULL
+                    ORDER BY name
+                """)
+                return cur.fetchall()
+        except Error as e:
+            print(f"Error fetching trainers:\n{e}")
+            return None
+        finally:
+            conn.close()
+
 db = Database()
