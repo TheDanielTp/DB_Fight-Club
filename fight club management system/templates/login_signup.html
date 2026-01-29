@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="login-container {% if request.method == 'POST' %}show-signup{% endif %}" id="loginContainer">
+    <!-- Login Side -->
+    <div class="login-side" style="background: linear-gradient(rgba(26, 26, 26, 0.9), rgba(26, 26, 26, 0.9)), url('{{ url_for('static', filename='images/main_page_logo.png') }}') center/contain no-repeat;">
+        <div class="login-form">
+            <h2 class="login-title">LOGIN</h2>
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-input" required>
+                </div>
+                <button type="submit" class="submit-btn">Login</button>
+            </form>
+            <div class="switch-text" onclick="switchSide()">
+                Don't have an account? Contact system administrator.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Signup Side (Information Only) -->
+    <div class="login-side" style="background: linear-gradient(rgba(90, 0, 0, 0.9), rgba(90, 0, 0, 0.9)), url('{{ url_for('static', filename='images/main_page_logo.png') }}') center/contain no-repeat;">
+        <div class="login-form">
+            <h2 class="login-title">ADMIN ACCESS ONLY</h2>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <p style="color: var(--paper); margin-bottom: 1rem;">
+                    This system is for authorized personnel only.
+                </p>
+                <p style="color: var(--ash-gray); font-size: 0.9rem;">
+                    Contact the system administrator for access credentials.
+                </p>
+            </div>
+            <div class="switch-text" onclick="switchSide()">
+                Already have an account? Login.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.login-container {
+    transition: transform 0.6s ease-in-out;
+}
+
+.login-container.show-signup .login-side:first-child {
+    transform: translateX(-5%);
+}
+
+.login-container.show-signup .login-side:last-child {
+    transform: translateX(-5%);
+}
+
+.login-side {
+    transition: transform 0.6s ease-in-out;
+}
+
+.login-container:not(.show-signup) .login-side:last-child {
+    transform: translateX(5%);
+}
+</style>
+
+<script>
+function switchSide() {
+    const container = document.getElementById('loginContainer');
+    container.classList.toggle('show-signup');
+}
+</script>
+{% endblock %}
