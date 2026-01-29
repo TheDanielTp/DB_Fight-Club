@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section">
+    <h1 class="page-title">WELCOME TO FIGHT CLUB MANAGEMENT</h1>
+    
+    <div class="content-panel">
+        <div class="welcome-message">
+            <h2 style="color: var(--gold); margin-bottom: 1rem;">Gentlemen. Welcome to the Fight Club...</h2>
+            <p style="font-size: 1.2rem; line-height: 1.6; margin-bottom: 2rem;">
+                Welcome to the ultimate fight club management system. Track fighters, gyms, trainers, and matches 
+                with precision and efficiency. Whether you're running an underground fight club or managing a 
+                professional MMA organization, this system has everything you need.
+            </p>
+            
+            <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 3rem;">
+                <div class="feature-card" style="background: var(--steel-gray); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--blood-red);">
+                    <h3 style="color: var(--gold); margin-bottom: 1rem;">Fighters</h3>
+                    <p>Manage fighter profiles, records, and training history</p>
+                </div>
+                
+                <div class="feature-card" style="background: var(--steel-gray); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--blood-red);">
+                    <h3 style="color: var(--gold); margin-bottom: 1rem;">Gyms</h3>
+                    <p>Track gyms, their reputation, and affiliated fighters</p>
+                </div>
+                
+                <div class="feature-card" style="background: var(--steel-gray); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--blood-red);">
+                    <h3 style="color: var(--gold); margin-bottom: 1rem;">Trainers</h3>
+                    <p>Manage trainers and their relationships with fighters</p>
+                </div>
+                
+                <div class="feature-card" style="background: var(--steel-gray); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--blood-red);">
+                    <h3 style="color: var(--gold); margin-bottom: 1rem;">Matches</h3>
+                    <p>Schedule and track match events and results</p>
+                </div>
+            </div>
+            
+            {% if not session.user_id %}
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="{{ url_for('login') }}" class="action-btn" style="display: inline-block; padding: 1rem 3rem; font-size: 1.2rem;">
+                    Login to Access Management System
+                </a>
+                <p style="margin-top: 1rem; color: var(--ash-gray);">
+                    Use admin credentials to access all features
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="stats-section" style="margin-top: 3rem;">
+        <div class="content-panel">
+            <h2 style="color: var(--gold); margin-bottom: 2rem; text-align: center;">System Statistics</h2>
+            <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: center;">
+                <div>
+                    <div class="stat-number" style="font-size: 2.5rem; color: var(--gold); font-weight: bold;">∞</div>
+                    <div class="stat-label" style="color: var(--ash-gray); text-transform: uppercase; letter-spacing: 1px;">Fighters</div>
+                </div>
+                <div>
+                    <div class="stat-number" style="font-size: 2.5rem; color: var(--gold); font-weight: bold;">∞</div>
+                    <div class="stat-label" style="color: var(--ash-gray); text-transform: uppercase; letter-spacing: 1px;">Gyms</div>
+                </div>
+                <div>
+                    <div class="stat-number" style="font-size: 2.5rem; color: var(--gold); font-weight: bold;">∞</div>
+                    <div class="stat-label" style="color: var(--ash-gray); text-transform: uppercase; letter-spacing: 1px;">Trainers</div>
+                </div>
+                <div>
+                    <div class="stat-number" style="font-size: 2.5rem; color: var(--gold); font-weight: bold;">∞</div>
+                    <div class="stat-label" style="color: var(--ash-gray); text-transform: uppercase; letter-spacing: 1px;">Matches</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

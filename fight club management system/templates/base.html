@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fight Club Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/main_page_logo.png') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='images/main_page_logo.png') }}" alt="Fight Club Logo" class="logo">
+            <div class="logo-text">FIGHT CLUB MANAGEMENT</div>
+        </div>
+        <div class="nav-links">
+            {% if session.user_id %}
+                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="{{ url_for('fighters') }}" class="nav-link {% if request.endpoint == 'fighters' %}active{% endif %}">Fighters</a>
+                <a href="{{ url_for('gyms') }}" class="nav-link {% if request.endpoint == 'gyms' %}active{% endif %}">Gyms</a>
+                <a href="{{ url_for('trainers') }}" class="nav-link {% if request.endpoint == 'trainers' %}active{% endif %}">Trainers</a>
+                <a href="{{ url_for('matches') }}" class="nav-link {% if request.endpoint == 'matches' %}active{% endif %}">Matches</a>
+                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            {% else %}
+                <a href="{{ url_for('fighters') }}" class="nav-link {% if request.endpoint == 'fighters' %}active{% endif %}">Fighters</a>
+                <a href="{{ url_for('gyms') }}" class="nav-link {% if request.endpoint == 'gyms' %}active{% endif %}">Gyms</a>
+                <a href="{{ url_for('trainers') }}" class="nav-link {% if request.endpoint == 'trainers' %}active{% endif %}">Trainers</a>
+                <a href="{{ url_for('matches') }}" class="nav-link {% if request.endpoint == 'matches' %}active{% endif %}">Matches</a>
+                <a href="{{ url_for('login') }}" class="nav-link">Login/Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="main-container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <div id="viewModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+</body>
+</html>
