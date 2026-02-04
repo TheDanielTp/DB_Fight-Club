@@ -1,291 +1,314 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard - Fight Club Management System{% endblock %}
+
 {% block content %}
-<h1 class="page-title">DASHBOARD</h1>
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </h1>
+        <p class="page-subtitle">
+            Welcome back, {{ session.username }}! Here's an overview of your fight club.
+        </p>
+    </div>
 
-<div class="dashboard-grid">
-    <!-- Fighters Card -->
-    <div class="dashboard-card">
-        <h2 class="card-title">👊 Fighters Management</h2>
-        <div class="action-grid">
-            <a href="{{ url_for('fighters') }}" class="action-btn">View Fighters</a>
-            <button class="action-btn" onclick="showAddModal('fighter')">Add Fighter</button>
-            <button class="action-btn" onclick="showUpdateModal('fighter')">Update Fighter</button>
-            <button class="action-btn" onclick="showDeleteModal('fighter')">Delete Fighter</button>
+    <!-- Quick Stats -->
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-fist-raised"></i>
+            </div>
+            <div class="stat-number" id="totalFighters">∞</div>
+            <div class="stat-label">Active Fighters</div>
+            <a href="{{ url_for('fighters') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-dumbbell"></i>
+            </div>
+            <div class="stat-number" id="totalGyms">∞</div>
+            <div class="stat-label">Registered Gyms</div>
+            <a href="{{ url_for('gyms') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="stat-number" id="totalTrainers">∞</div>
+            <div class="stat-label">Professional Trainers</div>
+            <a href="{{ url_for('trainers') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="stat-number" id="totalMatches">∞</div>
+            <div class="stat-label">Total Matches</div>
+            <a href="{{ url_for('matches') }}" class="stat-link">View All <i class="fas fa-arrow-right"></i></a>
         </div>
     </div>
+
+    <!-- Recent Activity -->
+    <div class="dashboard-section">
+        <h2 class="section-title">
+            <i class="fas fa-history"></i> Recent Activity
+        </h2>
+        
+        <div class="activity-list">
+            <!-- Activity items will be loaded dynamically -->
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div class="activity-content">
+                    <p>No recent activity</p>
+                </div>
+                <div class="activity-time">Just now</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="dashboard-section">
+        <h2 class="section-title">
+            <i class="fas fa-bolt"></i> Quick Actions
+        </h2>
+        
+        <div class="quick-actions">
+            <a href="{{ url_for('fighters') }}" class="quick-action-card">
+                <div class="action-icon">
+                    <i class="fas fa-fist-raised"></i>
+                </div>
+                <h3>Add New Fighter</h3>
+                <p>Register a new fighter to the system</p>
+            </a>
+            
+            <a href="{{ url_for('gyms') }}" class="quick-action-card">
+                <div class="action-icon">
+                    <i class="fas fa-dumbbell"></i>
+                </div>
+                <h3>Register New Gym</h3>
+                <p>Add a new gym to the network</p>
+            </a>
+            
+            <a href="{{ url_for('trainers') }}" class="quick-action-card">
+                <div class="action-icon">
+                    <i class="fas fa-user-tie"></i>
+                </div>
+                <h3>Add New Trainer</h3>
+                <p>Register a new trainer</p>
+            </a>
+            
+            <a href="{{ url_for('matches') }}" class="quick-action-card">
+                <div class="action-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3>Record New Match</h3>
+                <p>Log a new match result</p>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Dashboard Styles */
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    margin-top: 7rem;
+    padding: 0 20px;
+}
+
+.page-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-stats .stat-card {
+    background: var(--gradient-card);
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid rgba(231, 74, 143, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.dashboard-stats .stat-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(231, 74, 143, 0.3);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--accent-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.stat-link:hover {
+    color: var(--accent-primary);
+}
+
+.dashboard-section {
+    background: var(--gradient-card);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(231, 74, 143, 0.1);
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(10, 10, 10, 0.5);
+    border-radius: 10px;
+    border-left: 4px solid var(--accent-primary);
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(231, 74, 143, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-primary);
+}
+
+.activity-content {
+    flex: 1;
+}
+
+.activity-content p {
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.activity-content small {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.activity-time {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.quick-action-card {
+    background: rgba(10, 10, 10, 0.5);
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-decoration: none;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    display: block;
+}
+
+.quick-action-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-md);
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--gradient-primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.quick-action-card h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
+.quick-action-card p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .dashboard-stats,
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
     
-    <!-- Gyms Card -->
-    <div class="dashboard-card">
-        <h2 class="card-title">🏋️ Gyms Management</h2>
-        <div class="action-grid">
-            <a href="{{ url_for('gyms') }}" class="action-btn">View Gyms</a>
-            <button class="action-btn" onclick="showAddModal('gym')">Add Gym</button>
-            <button class="action-btn" onclick="showUpdateModal('gym')">Update Gym</button>
-            <button class="action-btn" onclick="showDeleteModal('gym')">Delete Gym</button>
-        </div>
-    </div>
-    
-    <!-- Trainers Card -->
-    <div class="dashboard-card">
-        <h2 class="card-title">🥋 Trainers Management</h2>
-        <div class="action-grid">
-            <a href="{{ url_for('trainers') }}" class="action-btn">View Trainers</a>
-            <button class="action-btn" onclick="showAddModal('trainer')">Add Trainer</button>
-            <button class="action-btn" onclick="showUpdateModal('trainer')">Update Trainer</button>
-            <button class="action-btn" onclick="showDeleteModal('trainer')">Delete Trainer</button>
-        </div>
-    </div>
-    
-    <!-- Matches Card -->
-    <div class="dashboard-card">
-        <h2 class="card-title">🥊 Matches Management</h2>
-        <div class="action-grid">
-            <a href="{{ url_for('matches') }}" class="action-btn">View Matches</a>
-            <button class="action-btn" onclick="showAddModal('match')">Add Match</button>
-            <button class="action-btn" onclick="showUpdateModal('match')">Update Match</button>
-            <button class="action-btn" onclick="showDeleteModal('match')">Delete Match</button>
-        </div>
-    </div>
-</div>
-
-<!-- Add Modal -->
-<div id="addModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-        <span class="close-btn" onclick="closeAddModal()">&times;</span>
-        <div id="addModalBody"></div>
-    </div>
-</div>
-
-<!-- Update Modal -->
-<div id="updateModal" class="modal">
-    <div class="modal-content" style="max-width: 800px;">
-        <span class="close-btn" onclick="closeUpdateModal()">&times;</span>
-        <div id="updateModalBody"></div>
-    </div>
-</div>
-
-<!-- Delete Modal -->
-<div id="deleteModal" class="modal">
-    <div class="modal-content" style="max-width: 600px;">
-        <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
-        <div id="deleteModalBody"></div>
-    </div>
-</div>
+    .dashboard-section {
+        padding: 1.5rem;
+    }
+}
+</style>
 
 <script>
-function showAddModal(entityType) {
-    const modal = document.getElementById('addModal');
-    const modalBody = document.getElementById('addModalBody');
-    
-    fetch(`/static/html/add_${entityType}.html`)
-        .then(response => response.text())
-        .then(html => {
-            modalBody.innerHTML = html;
-            modal.style.display = 'block';
-            attachAddFormListener(entityType);
-        })
-        .catch(() => {
-            modalBody.innerHTML = `
-                <h2 style="color: var(--gold); margin-bottom: 1rem;">Add ${capitalizeFirst(entityType)}</h2>
-                <p style="color: var(--paper);">Form template not found. Please use the specific ${entityType} page.</p>
-            `;
-            modal.style.display = 'block';
-        });
-}
-
-function showUpdateModal(entityType) {
-    const modal = document.getElementById('updateModal');
-    const modalBody = document.getElementById('updateModalBody');
-    
-    // Load search interface
-    modalBody.innerHTML = `
-        <h2 style="color: var(--gold); margin-bottom: 1rem;">Update ${capitalizeFirst(entityType)}</h2>
-        <div class="search-container" style="margin-bottom: 2rem;">
-            <input type="search" id="updateSearch" class="search-input" placeholder="Search ${entityType}s...">
-            <button class="search-btn" onclick="searchForUpdate('${entityType}')">Search</button>
-        </div>
-        <div id="updateResults"></div>
-    `;
-    modal.style.display = 'block';
-}
-
-function showDeleteModal(entityType) {
-    const modal = document.getElementById('deleteModal');
-    const modalBody = document.getElementById('deleteModalBody');
-    
-    modalBody.innerHTML = `
-        <h2 style="color: var(--gold); margin-bottom: 1rem;">Delete ${capitalizeFirst(entityType)}</h2>
-        <div class="search-container" style="margin-bottom: 2rem;">
-            <input type="search" id="deleteSearch" class="search-input" placeholder="Search ${entityType}s...">
-            <button class="search-btn" onclick="searchForDelete('${entityType}')">Search</button>
-        </div>
-        <div id="deleteResults"></div>
-    `;
-    modal.style.display = 'block';
-}
-
-function closeAddModal() {
-    document.getElementById('addModal').style.display = 'none';
-}
-
-function closeUpdateModal() {
-    document.getElementById('updateModal').style.display = 'none';
-}
-
-function closeDeleteModal() {
-    document.getElementById('deleteModal').style.display = 'none';
-}
-
-function capitalizeFirst(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-function attachAddFormListener(entityType) {
-    const form = document.getElementById(`add${capitalizeFirst(entityType)}Form`);
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            submitAddForm(entityType, this);
-        });
-    }
-}
-
-function submitAddForm(entityType, form) {
-    const formData = new FormData(form);
-    
-    fetch(`/api/add/${entityType}`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(`${capitalizeFirst(entityType)} added successfully!`);
-            closeAddModal();
-            window.location.reload();
-        } else {
-            alert(data.error || `Failed to add ${entityType}`);
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load stats
+    try {
+        const response = await fetch('/api/stats');
+        if (response.ok) {
+            const stats = await response.json();
+            
+            document.getElementById('totalFighters').textContent = stats.fighters;
+            document.getElementById('totalGyms').textContent = stats.gyms;
+            document.getElementById('totalTrainers').textContent = stats.trainers;
+            document.getElementById('totalMatches').textContent = stats.matches;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred');
-    });
-}
-
-function searchForUpdate(entityType) {
-    const searchTerm = document.getElementById('updateSearch').value;
-    const resultsDiv = document.getElementById('updateResults');
-    
-    fetch(`/${entityType}s?search=${encodeURIComponent(searchTerm)}&json=1`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.length === 0) {
-                resultsDiv.innerHTML = '<p style="color: var(--paper);">No results found</p>';
-                return;
-            }
-            
-            let html = '<div class="items-grid">';
-            data.forEach(item => {
-                html += `
-                    <div class="item-card" onclick="loadUpdateForm('${entityType}', ${item[`${entityType}_id`]})">
-                        <div class="item-title">${getItemTitle(entityType, item)}</div>
-                        <div class="item-subtitle">${getItemSubtitle(entityType, item)}</div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            resultsDiv.innerHTML = html;
-        })
-        .catch(() => {
-            resultsDiv.innerHTML = '<p style="color: var(--paper);">Error searching</p>';
-        });
-}
-
-function searchForDelete(entityType) {
-    const searchTerm = document.getElementById('deleteSearch').value;
-    const resultsDiv = document.getElementById('deleteResults');
-    
-    fetch(`/${entityType}s?search=${encodeURIComponent(searchTerm)}&json=1`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.length === 0) {
-                resultsDiv.innerHTML = '<p style="color: var(--paper);">No results found</p>';
-                return;
-            }
-            
-            let html = '<div class="items-grid">';
-            data.forEach(item => {
-                html += `
-                    <div class="item-card" onclick="confirmDeleteItem('${entityType}', ${item[`${entityType}_id`]}, '${getItemTitle(entityType, item)}')">
-                        <div class="item-title">${getItemTitle(entityType, item)}</div>
-                        <div class="item-subtitle">${getItemSubtitle(entityType, item)}</div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            resultsDiv.innerHTML = html;
-        })
-        .catch(() => {
-            resultsDiv.innerHTML = '<p style="color: var(--paper);">Error searching</p>';
-        });
-}
-
-function getItemTitle(entityType, item) {
-    switch(entityType) {
-        case 'fighter':
-            return `${item.name} "${item.nickname || 'No Nickname'}"`;
-        case 'gym':
-            return item.name;
-        case 'trainer':
-            return item.name;
-        case 'match':
-            return `Match #${item.match_id}`;
-        default:
-            return 'Unknown';
+    } catch (error) {
+        console.error('Error loading stats:', error);
     }
-}
-
-function getItemSubtitle(entityType, item) {
-    switch(entityType) {
-        case 'fighter':
-            return item.weight_class;
-        case 'gym':
-            return item.owner;
-        case 'trainer':
-            return item.specialty;
-        case 'match':
-            return new Date(item.start_date).toLocaleDateString();
-        default:
-            return '';
-    }
-}
-
-function loadUpdateForm(entityType, id) {
-    window.location.href = `/${entityType}s#edit-${id}`;
-}
-
-function confirmDeleteItem(entityType, id, name) {
-    if (confirm(`Are you sure you want to delete "${name}"?`)) {
-        fetch(`/api/delete/${entityType}/${id}`, {
-            method: 'POST'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Deleted successfully!');
-                closeDeleteModal();
-                window.location.reload();
-            } else {
-                alert(data.error || 'Delete failed');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred');
-        });
-    }
-}
+});
 </script>
 {% endblock %}
