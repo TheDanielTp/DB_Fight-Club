@@ -3,54 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fight Club Management System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>{% block title %}Fight Club Management System{% endblock %}</title>
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/main_page_logo.png') }}">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 </head>
-<body>
+<body class="{% if request.endpoint == 'login' %}login-page{% endif %}">
+    <!-- Page Transition -->
+    <div class="page-transition">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <!-- Navigation -->
     <nav class="navbar">
-        <div class="logo-container">
+        <div class="logo-container" onclick="window.location.href='{{ url_for('index') }}'">
             <img src="{{ url_for('static', filename='images/main_page_logo.png') }}" alt="Fight Club Logo" class="logo">
-            <div class="logo-text">FIGHT CLUB MANAGEMENT</div>
+            <div class="logo-text">Fight Club MS</div>
         </div>
+        
         <div class="nav-links">
-            {% if session.user_id %}
-                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
-                <a href="{{ url_for('fighters') }}" class="nav-link {% if request.endpoint == 'fighters' %}active{% endif %}">Fighters</a>
-                <a href="{{ url_for('gyms') }}" class="nav-link {% if request.endpoint == 'gyms' %}active{% endif %}">Gyms</a>
-                <a href="{{ url_for('trainers') }}" class="nav-link {% if request.endpoint == 'trainers' %}active{% endif %}">Trainers</a>
-                <a href="{{ url_for('matches') }}" class="nav-link {% if request.endpoint == 'matches' %}active{% endif %}">Matches</a>
-                <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+            {% if request.endpoint != 'login' %}
+                {% if session.user_id %}
+                    <a href="{{ url_for('dashboard') }}" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{{ url_for('fighters') }}" class="nav-link">
+                        <i class="fas fa-fist-raised"></i> Fighters
+                    </a>
+                    <a href="{{ url_for('gyms') }}" class="nav-link">
+                        <i class="fas fa-dumbbell"></i> Gyms
+                    </a>
+                    <a href="{{ url_for('trainers') }}" class="nav-link">
+                        <i class="fas fa-user-tie"></i> Trainers
+                    </a>
+                    <a href="{{ url_for('matches') }}" class="nav-link">
+                        <i class="fas fa-trophy"></i> Matches
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="nav-link login-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('fighters') }}" class="nav-link entity-btn" data-entity="Fighters">
+                        <i class="fas fa-fist-raised"></i> Fighters
+                    </a>
+                    <a href="{{ url_for('gyms') }}" class="nav-link entity-btn" data-entity="Gyms">
+                        <i class="fas fa-dumbbell"></i> Gyms
+                    </a>
+                    <a href="{{ url_for('trainers') }}" class="nav-link entity-btn" data-entity="Trainers">
+                        <i class="fas fa-user-tie"></i> Trainers
+                    </a>
+                    <a href="{{ url_for('matches') }}" class="nav-link entity-btn" data-entity="Matches">
+                        <i class="fas fa-trophy"></i> Matches
+                    </a>
+                    <a href="{{ url_for('login') }}" class="nav-link login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Login/Sign Up
+                    </a>
+                {% endif %}
             {% else %}
-                <a href="{{ url_for('fighters') }}" class="nav-link {% if request.endpoint == 'fighters' %}active{% endif %}">Fighters</a>
-                <a href="{{ url_for('gyms') }}" class="nav-link {% if request.endpoint == 'gyms' %}active{% endif %}">Gyms</a>
-                <a href="{{ url_for('trainers') }}" class="nav-link {% if request.endpoint == 'trainers' %}active{% endif %}">Trainers</a>
-                <a href="{{ url_for('matches') }}" class="nav-link {% if request.endpoint == 'matches' %}active{% endif %}">Matches</a>
-                <a href="{{ url_for('login') }}" class="nav-link">Login/Sign Up</a>
+                <a href="{{ url_for('index') }}" class="nav-link login-btn">
+                    <i class="fas fa-arrow-left"></i> Return to Main Page
+                </a>
             {% endif %}
         </div>
     </nav>
-
-    <div class="main-container">
+    
+    <!-- Main Content -->
+    <main class="main-content">
         {% block content %}{% endblock %}
-    </div>
-
-    <div id="viewModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <div id="modal-body"></div>
-        </div>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    </main>
+    
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="flash-messages">
                 {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">{{ message }}</div>
+                    <div class="flash-message {{ category }}">
+                        <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                        <span>{{ message }}</span>
+                        <button class="close-flash" style="margin-left: auto; background: none; border: none; color: white; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 {% endfor %}
             </div>
         {% endif %}
     {% endwith %}
+    
+    <!-- Footer (Only show on non-login pages) -->
+    {% if request.endpoint != 'login' %}
+    <footer class="footer">
+        <div class="main-container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Fight Club MS</h3>
+                    <p>The ultimate management system for fight clubs, MMA gyms, and professional fighting organizations.</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="{{ url_for('index') }}"><i class="fas fa-home"></i> Home</a></li>
+                        <li><a href="{{ url_for('fighters') }}"><i class="fas fa-fist-raised"></i> Fighters</a></li>
+                        <li><a href="{{ url_for('gyms') }}"><i class="fas fa-dumbbell"></i> Gyms</a></li>
+                        <li><a href="{{ url_for('trainers') }}"><i class="fas fa-user-tie"></i> Trainers</a></li>
+                        <li><a href="{{ url_for('matches') }}"><i class="fas fa-trophy"></i> Matches</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-envelope"></i> contact@fightclubms.com</a></li>
+                        <li><a href="#"><i class="fas fa-phone"></i> +1 (555) 123-4567</a></li>
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> 123 Fight Street, Vegas, NV</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h3>Follow Us</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fab fa-twitter"></i> Twitter</a></li>
+                        <li><a href="#"><i class="fab fa-facebook"></i> Facebook</a></li>
+                        <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
+                        <li><a href="#"><i class="fab fa-youtube"></i> YouTube</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 Fight Club Management System. All rights reserved. | Designed with <i class="fas fa-heart" style="color: #e74a8f;"></i> for the fighting community.</p>
+            </div>
+        </div>
+    </footer>
+    {% endif %}
+    
+    <!-- Set login status for JavaScript -->
+    <script>
+        window.isLoggedIn = {{ 'true' if session.user_id else 'false' }};
+    </script>
 </body>
 </html>
