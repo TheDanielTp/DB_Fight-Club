@@ -1,0 +1,2281 @@
+{% extends "base.html" %}
+
+{% block title %}Fighters Management - Fight Club Management System{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-fist-raised"></i> Fighters Management
+        </h1>
+        <p class="page-subtitle">
+            Manage all fighters, their gym affiliations, trainers, and records
+        </p>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="fighters-container">
+        <!-- Left Panel - Fighter List -->
+        <div class="fighters-list-panel">
+            <!-- Search and Actions Bar -->
+            <div class="search-actions-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="fighterSearch" placeholder="Search fighters by name or nickname..." 
+                           onkeyup="searchFighters()">
+                </div>
+                <button class="create-fighter-btn" onclick="showCreateFighterModal()">
+                    <i class="fas fa-plus"></i> Create New Fighter
+                </button>
+            </div>
+
+            <!-- Fighter List -->
+            <div class="fighters-list" id="fightersList">
+                <!-- Fighter cards will be loaded here dynamically -->
+                <div class="loading-spinner-container">
+                    <div class="loading-spinner"></div>
+                    <p>Loading fighters...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Fighter Details (Initially hidden) -->
+        <div class="fighter-details-panel" id="fighterDetailsPanel">
+            <div class="panel-header">
+                <h2 id="selectedFighterName">Select a Fighter</h2>
+                <button class="close-panel-btn" onclick="closeFighterPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Main Fighter Info -->
+            <div class="fighter-main-info" id="fighterMainInfo">
+                <div class="placeholder-content">
+                    <i class="fas fa-user" style="font-size: 4rem; color: var(--accent-secondary); margin-bottom: 1rem;"></i>
+                    <p>Select a fighter from the list to view details and manage their profile</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Creating/Editing Fighter -->
+<div class="modal" id="fighterModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Create New Fighter</h2>
+            <button class="close-modal-btn" onclick="closeModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="fighterForm" onsubmit="saveFighter(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="fighterName">
+                        <i class="fas fa-user"></i> Full Name *
+                    </label>
+                    <input type="text" id="fighterName" name="name" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="fighterNickname">
+                        <i class="fas fa-signature"></i> Nickname
+                    </label>
+                    <input type="text" id="fighterNickname" name="nickname" class="form-input">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="fighterWeightClass">
+                        <i class="fas fa-weight"></i> Weight Class *
+                    </label>
+                    <select id="fighterWeightClass" name="weight_class" class="form-input" required>
+                        <option value="">Select Weight Class</option>
+                        <option value="Strawweight">Strawweight</option>
+                        <option value="Flyweight">Flyweight</option>
+                        <option value="Bantamweight">Bantamweight</option>
+                        <option value="Featherweight">Featherweight</option>
+                        <option value="Lightweight">Lightweight</option>
+                        <option value="Welterweight">Welterweight</option>
+                        <option value="Middleweight">Middleweight</option>
+                        <option value="Light Heavyweight">Light Heavyweight</option>
+                        <option value="Heavyweight">Heavyweight</option>
+                        <option value="Catchweight">Catchweight</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="fighterHeight">
+                        <i class="fas fa-ruler-vertical"></i> Height (cm) *
+                    </label>
+                    <input type="number" id="fighterHeight" name="height" class="form-input" step="0.01" min="0" required>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="fighterAge">
+                        <i class="fas fa-birthday-cake"></i> Age *
+                    </label>
+                    <input type="number" id="fighterAge" name="age" class="form-input" min="18" max="50" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="fighterNationality">
+                        <i class="fas fa-globe"></i> Nationality
+                    </label>
+                    <input type="text" id="fighterNationality" name="nationality" class="form-input">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="fighterStatus">
+                        <i class="fas fa-user-check"></i> Status *
+                    </label>
+                    <select id="fighterStatus" name="status" class="form-input" required>
+                        <option value="active">Active</option>
+                        <option value="retired">Retired</option>
+                        <option value="suspended">Suspended</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="fighterGym">
+                        <i class="fas fa-dumbbell"></i> Gym
+                    </label>
+                    <select id="fighterGym" name="gym_id" class="form-input">
+                        <option value="">No Gym</option>
+                        <!-- Gyms will be populated dynamically -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Fighter
+                </button>
+            </div>
+            
+            <input type="hidden" id="fighterId" name="fighter_id">
+        </form>
+    </div>
+</div>
+
+<!-- Modal for Editing Gym -->
+<div class="modal" id="gymModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Fighter's Gym</h2>
+            <button class="close-modal-btn" onclick="closeGymModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="search-box" style="margin-bottom: 1.5rem;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="gymSearch" placeholder="Search gyms by name or location..." 
+                   onkeyup="searchGyms()">
+        </div>
+        
+        <div class="entity-list" id="gymsList">
+            <!-- Gyms will be loaded here -->
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn-danger" onclick="removeGym()" id="removeGymBtn">
+                <i class="fas fa-trash"></i> Remove Gym
+            </button>
+            <button type="button" class="btn-secondary" onclick="closeGymModal()">
+                Cancel
+            </button>
+            <button type="button" class="btn-primary" onclick="saveGym()" id="saveGymBtn" disabled>
+                <i class="fas fa-check"></i> Save Changes
+            </button>
+        </div>
+        
+        <input type="hidden" id="selectedGymId">
+    </div>
+</div>
+
+<!-- Modal for Adding Trainer -->
+<div class="modal" id="addTrainerModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Trainer to Fighter</h2>
+            <button class="close-modal-btn" onclick="closeAddTrainerModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="search-box" style="margin-bottom: 1.5rem;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="trainerSearch" placeholder="Search trainers by name or specialty..." 
+                   onkeyup="searchTrainers()">
+        </div>
+        
+        <div class="entity-list" id="trainersList">
+            <!-- Trainers will be loaded here -->
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeAddTrainerModal()">
+                Cancel
+            </button>
+            <button type="button" class="btn-primary" onclick="addTrainer()" id="addTrainerBtn" disabled>
+                <i class="fas fa-plus"></i> Add Selected Trainer
+            </button>
+        </div>
+        
+        <input type="hidden" id="selectedTrainerId">
+    </div>
+</div>
+
+<!-- Modal for Removing Trainer -->
+<div class="modal" id="removeTrainerModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Remove Trainer from Fighter</h2>
+            <button class="close-modal-btn" onclick="closeRemoveTrainerModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="search-box" style="margin-bottom: 1.5rem;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="fighterTrainerSearch" placeholder="Search fighter's trainers..." 
+                   onkeyup="searchFighterTrainers()">
+        </div>
+        
+        <div class="entity-list" id="fighterTrainersList">
+            <!-- Fighter's trainers will be loaded here -->
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeRemoveTrainerModal()">
+                Cancel
+            </button>
+            <button type="button" class="btn-danger" onclick="removeSelectedTrainer()" id="removeTrainerBtn" disabled>
+                <i class="fas fa-trash"></i> Remove Selected Trainer
+            </button>
+        </div>
+        
+        <input type="hidden" id="selectedFighterTrainerId">
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+<script>
+// Global variables
+let currentFighterId = null;
+let fightersData = [];
+let gymsData = [];
+let trainersData = [];
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadFighters();
+    setupEventListeners();
+    
+    // Set up keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeGymModal();
+            closeAddTrainerModal();
+            closeRemoveTrainerModal();
+        }
+    });
+});
+
+// Setup event listeners
+function setupEventListeners() {
+    // Search input events
+    document.getElementById('fighterSearch').addEventListener('input', searchFighters);
+}
+
+// Load all fighters
+async function loadFighters() {
+    showLoading();
+    try {
+        const response = await fetch('/api/fighters');
+        if (response.ok) {
+            fightersData = await response.json();
+            displayFighters(fightersData);
+        } else {
+            throw new Error('Failed to load fighters');
+        }
+    } catch (error) {
+        console.error('Error loading fighters:', error);
+        showFlashMessage('Failed to load fighters. Please try again.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display fighters in the list
+function displayFighters(fighters) {
+    const fightersList = document.getElementById('fightersList');
+    
+    if (fighters.length === 0) {
+        fightersList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-user-slash" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <h3>No Fighters Found</h3>
+                <p>Create your first fighter to get started</p>
+            </div>
+        `;
+        return;
+    }
+    
+    fightersList.innerHTML = fighters.map(fighter => `
+        <div class="fighter-card" data-id="${fighter.fighter_id}" onclick="selectFighter(${fighter.fighter_id})">
+            <div class="fighter-card-header">
+                <div class="fighter-name">
+                    <h3>${fighter.name}</h3>
+                    ${fighter.nickname ? `<span class="fighter-nickname">"${fighter.nickname}"</span>` : ''}
+                </div>
+                <div class="fighter-status ${fighter.status}">
+                    <i class="fas fa-${fighter.status === 'active' ? 'check-circle' : fighter.status === 'retired' ? 'user-slash' : 'ban'}"></i>
+                    ${fighter.status.charAt(0).toUpperCase() + fighter.status.slice(1)}
+                </div>
+            </div>
+            
+            <div class="fighter-card-body">
+                <div class="fighter-info">
+                    <span class="info-item">
+                        <i class="fas fa-weight"></i>
+                        ${fighter.weight_class}
+                    </span>
+                    <span class="info-item">
+                        <i class="fas fa-ruler-vertical"></i>
+                        ${fighter.height} cm
+                    </span>
+                    <span class="info-item">
+                        <i class="fas fa-flag"></i>
+                        ${fighter.nationality || 'N/A'}
+                    </span>
+                </div>
+                
+                <div class="fighter-record">
+                    <div class="record-item wins">
+                        <span class="record-count">${fighter.wins || 0}</span>
+                        <span class="record-label">Wins</span>
+                    </div>
+                    <div class="record-item losses">
+                        <span class="record-count">${fighter.losses || 0}</span>
+                        <span class="record-label">Losses</span>
+                    </div>
+                    <div class="record-item draws">
+                        <span class="record-count">${fighter.draws || 0}</span>
+                        <span class="record-label">Draws</span>
+                    </div>
+                </div>
+            </div>
+            
+            ${fighter.gym_name ? `
+                <div class="fighter-card-footer">
+                    <i class="fas fa-dumbbell"></i>
+                    ${fighter.gym_name}
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+// Search fighters
+function searchFighters() {
+    const searchTerm = document.getElementById('fighterSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+        displayFighters(fightersData);
+        return;
+    }
+    
+    const filteredFighters = fightersData.filter(fighter => 
+        fighter.name.toLowerCase().includes(searchTerm) ||
+        (fighter.nickname && fighter.nickname.toLowerCase().includes(searchTerm))
+    );
+    
+    displayFighters(filteredFighters);
+}
+
+// Select a fighter
+async function selectFighter(fighterId) {
+    showLoading();
+    try {
+        const response = await fetch(`/api/fighters/${fighterId}`);
+        if (response.ok) {
+            const fighter = await response.json();
+            currentFighterId = fighterId;
+            displayFighterDetails(fighter);
+            
+            // Show the details panel
+            document.getElementById('fighterDetailsPanel').style.display = 'flex';
+            
+            // Load trainers - use setTimeout to ensure DOM is ready
+            requestAnimationFrame(() => {
+                loadFighterTrainers(fighterId);
+            });
+        } else {
+            throw new Error('Failed to load fighter details');
+        }
+    } catch (error) {
+        console.error('Error loading fighter details:', error);
+        showFlashMessage('Failed to load fighter details. Please try again.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display fighter details
+function displayFighterDetails(fighter) {
+    const panel = document.getElementById('fighterMainInfo');
+    
+    panel.innerHTML = `
+        <!-- Basic Info Section -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-user"></i> Basic Information
+                <button class="edit-btn" onclick="editFighter()">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            </h3>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <label><i class="fas fa-user"></i> Full Name</label>
+                    <span class="info-value" id="infoName">${fighter.name}</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-signature"></i> Nickname</label>
+                    <span class="info-value" id="infoNickname">${fighter.nickname || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-weight"></i> Weight Class</label>
+                    <span class="info-value" id="infoWeightClass">${fighter.weight_class}</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-ruler-vertical"></i> Height</label>
+                    <span class="info-value" id="infoHeight">${fighter.height} cm</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-birthday-cake"></i> Age</label>
+                    <span class="info-value" id="infoAge">${fighter.age} years</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-flag"></i> Nationality</label>
+                    <span class="info-value" id="infoNationality">${fighter.nationality || 'N/A'}</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-user-check"></i> Status</label>
+                    <span class="info-value ${fighter.status}" id="infoStatus">
+                        <i class="fas fa-${fighter.status === 'active' ? 'check-circle' : fighter.status === 'retired' ? 'user-slash' : 'ban'}"></i>
+                        ${fighter.status.charAt(0).toUpperCase() + fighter.status.slice(1)}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gym Section -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-dumbbell"></i> Gym Affiliation
+                <div class="action-buttons">
+                    <button class="edit-btn" onclick="editFighterGym()">
+                        <i class="fas fa-exchange-alt"></i> Change Gym
+                    </button>
+                    ${fighter.gym_id ? `
+                        <button class="view-btn" onclick="viewGym(${fighter.gym_id})">
+                            <i class="fas fa-external-link-alt"></i> View Gym
+                        </button>
+                    ` : ''}
+                </div>
+            </h3>
+            
+            ${fighter.gym_name ? `
+                <div class="gym-info">
+                    <div class="gym-card">
+                        <div class="gym-header">
+                            <h4>${fighter.gym_name}</h4>
+                            <span class="reputation-score" style="background: ${getReputationColor(fighter.gym_reputation)}">
+                                ${fighter.gym_reputation}%
+                            </span>
+                        </div>
+                        <div class="gym-details">
+                            <p><i class="fas fa-map-marker-alt"></i> ${fighter.gym_location}</p>
+                            <p><i class="fas fa-user-tie"></i> ${fighter.gym_owner}</p>
+                        </div>
+                    </div>
+                </div>
+            ` : `
+                <div class="empty-state">
+                    <i class="fas fa-dumbbell" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                    <p>No gym affiliation</p>
+                </div>
+            `}
+        </div>
+        
+        <!-- Record Section -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-chart-line"></i> Fight Record
+            </h3>
+            
+            <div class="record-display">
+                <div class="record-stat wins">
+                    <div class="stat-number">${fighter.wins || 0}</div>
+                    <div class="stat-label">Wins</div>
+                </div>
+                <div class="record-stat losses">
+                    <div class="stat-number">${fighter.losses || 0}</div>
+                    <div class="stat-label">Losses</div>
+                </div>
+                <div class="record-stat draws">
+                    <div class="stat-number">${fighter.draws || 0}</div>
+                    <div class="stat-label">Draws</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trainers Section -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-user-tie"></i> Trainers
+                <div class="action-buttons">
+                    <button class="add-btn" onclick="showAddTrainerModal()">
+                        <i class="fas fa-plus"></i> Add Trainer
+                    </button>
+                    <button class="remove-btn" onclick="showRemoveTrainerModal()">
+                        <i class="fas fa-minus"></i> Remove Trainer
+                    </button>
+                </div>
+            </h3>
+            
+            <div class="trainers-list" id="fighterTrainers">
+                <!-- Trainers will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="info-section danger-zone">
+            <h3 class="section-title">
+                <i class="fas fa-exclamation-triangle"></i> Danger Zone
+            </h3>
+            
+            <div class="danger-actions">
+                <button class="btn-danger" onclick="deleteFighter()">
+                    <i class="fas fa-trash"></i> Delete Fighter
+                </button>
+                <p class="warning-text">
+                    <i class="fas fa-exclamation-circle"></i>
+                    This action cannot be undone. All fighter data, including matches and trainer relationships, will be permanently deleted.
+                </p>
+            </div>
+        </div>
+    `;
+    
+    // Load trainers for this fighter
+    loadFighterTrainers(fighterId);
+    
+    // Update panel title
+    document.getElementById('selectedFighterName').textContent = fighter.name;
+}
+
+// Load fighter's trainers
+async function loadFighterTrainers(fighterId) {
+    try {
+        const response = await fetch(`/api/fighters/${fighterId}/trainers`);
+        if (response.ok) {
+            const trainers = await response.json();
+            displayFighterTrainers(trainers);
+        }
+    } catch (error) {
+        console.error('Error loading fighter trainers:', error);
+    }
+}
+
+// Display fighter's trainers
+function displayFighterTrainers(trainers) {
+    const trainersContainer = document.getElementById('fighterTrainers');
+    
+    if (!trainersContainer) return;
+    
+    if (trainers.length === 0) {
+        trainersContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-user-tie" style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                <p>No trainers assigned</p>
+            </div>
+        `;
+        return;
+    }
+    
+    trainersContainer.innerHTML = trainers.map(trainer => `
+        <div class="trainer-card">
+            <div class="trainer-info">
+                <h4>${trainer.name}</h4>
+                <p><i class="fas fa-star"></i> ${trainer.specialty}</p>
+                <p><i class="fas fa-calendar"></i> Since ${new Date(trainer.start_date).toLocaleDateString()}</p>
+                ${trainer.end_date ? `
+                    <p><i class="fas fa-calendar-times"></i> Until ${new Date(trainer.end_date).toLocaleDateString()}</p>
+                ` : ''}
+            </div>
+            <div class="trainer-actions">
+                <button class="view-btn" onclick="viewTrainer(${trainer.trainer_id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Edit fighter
+async function editFighter() {
+    if (!currentFighterId) return;
+    
+    showLoading();
+    try {
+        // Load fighter data
+        const response = await fetch(`/api/fighters/${currentFighterId}`);
+        if (response.ok) {
+            const fighter = await response.json();
+            
+            // Load gyms for dropdown
+            const gymsResponse = await fetch('/api/gyms');
+            if (gymsResponse.ok) {
+                const gyms = await gymsResponse.json();
+                
+                // Populate form
+                document.getElementById('modalTitle').textContent = 'Edit Fighter';
+                document.getElementById('fighterId').value = fighter.fighter_id;
+                document.getElementById('fighterName').value = fighter.name;
+                document.getElementById('fighterNickname').value = fighter.nickname || '';
+                document.getElementById('fighterWeightClass').value = fighter.weight_class;
+                document.getElementById('fighterHeight').value = fighter.height;
+                document.getElementById('fighterAge').value = fighter.age;
+                document.getElementById('fighterNationality').value = fighter.nationality || '';
+                document.getElementById('fighterStatus').value = fighter.status;
+                
+                // Populate gym dropdown
+                const gymSelect = document.getElementById('fighterGym');
+                gymSelect.innerHTML = '<option value="">No Gym</option>' +
+                    gyms.map(gym => `
+                        <option value="${gym.gym_id}" ${fighter.gym_id == gym.gym_id ? 'selected' : ''}>
+                            ${gym.name} - ${gym.location}
+                        </option>
+                    `).join('');
+                
+                // Show modal
+                showModal();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading fighter for edit:', error);
+        showFlashMessage('Failed to load fighter data for editing.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show create fighter modal
+async function showCreateFighterModal() {
+    document.getElementById('modalTitle').textContent = 'Create New Fighter';
+    document.getElementById('fighterForm').reset();
+    document.getElementById('fighterId').value = '';
+    
+    // Load gyms for dropdown
+    showLoading();
+    try {
+        const response = await fetch('/api/gyms');
+        if (response.ok) {
+            const gyms = await response.json();
+            const gymSelect = document.getElementById('fighterGym');
+            gymSelect.innerHTML = '<option value="">No Gym</option>' +
+                gyms.map(gym => `
+                    <option value="${gym.gym_id}">
+                        ${gym.name} - ${gym.location}
+                    </option>
+                `).join('');
+            
+            showModal();
+        }
+    } catch (error) {
+        console.error('Error loading gyms:', error);
+        showFlashMessage('Failed to load gyms.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Save fighter (create or update)
+async function saveFighter(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const fighterData = Object.fromEntries(formData);
+    
+    // Convert height to number
+    fighterData.height = parseFloat(fighterData.height);
+    fighterData.age = parseInt(fighterData.age);
+    
+    // If gym_id is empty string, set to null
+    if (fighterData.gym_id === '') {
+        fighterData.gym_id = null;
+    }
+    
+    const isEdit = !!fighterData.fighter_id;
+    const url = isEdit ? `/api/fighters/${fighterData.fighter_id}` : '/api/fighters';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    showLoading();
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(fighterData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showFlashMessage(isEdit ? 'Fighter updated successfully!' : 'Fighter created successfully!', 'success');
+            
+            // Reload fighters list
+            await loadFighters();
+            
+            // If we were editing the currently selected fighter, refresh details
+            if (isEdit && currentFighterId === parseInt(fighterData.fighter_id)) {
+                await selectFighter(currentFighterId);
+            }
+            
+            closeModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to save fighter');
+        }
+    } catch (error) {
+        console.error('Error saving fighter:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Edit fighter's gym
+async function editFighterGym() {
+    if (!currentFighterId) return;
+    
+    showLoading();
+    try {
+        // Load current fighter to get gym ID
+        const fighterResponse = await fetch(`/api/fighters/${currentFighterId}`);
+        const fighter = await fighterResponse.json();
+        
+        // Load all gyms
+        const gymsResponse = await fetch('/api/gyms');
+        gymsData = await gymsResponse.json();
+        
+        // Display gyms
+        displayGyms(gymsData);
+        
+        // Set current gym as selected
+        if (fighter.gym_id) {
+            document.getElementById('selectedGymId').value = fighter.gym_id;
+            document.querySelectorAll('.gym-item').forEach(item => {
+                if (parseInt(item.dataset.id) === fighter.gym_id) {
+                    item.classList.add('selected');
+                }
+            });
+            updateGymModalButtons(true);
+        } else {
+            updateGymModalButtons(false);
+        }
+        
+        // Show gym modal
+        showGymModal();
+    } catch (error) {
+        console.error('Error loading gyms:', error);
+        showFlashMessage('Failed to load gyms.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display gyms in modal
+function displayGyms(gyms) {
+    const gymsList = document.getElementById('gymsList');
+    
+    if (gyms.length === 0) {
+        gymsList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-dumbbell" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                <p>No gyms found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    gymsList.innerHTML = gyms.map(gym => `
+        <div class="entity-item gym-item" data-id="${gym.gym_id}" onclick="selectGym(${gym.gym_id})">
+            <div class="entity-info">
+                <h4>${gym.name}</h4>
+                <p><i class="fas fa-map-marker-alt"></i> ${gym.location}</p>
+                <p><i class="fas fa-user-tie"></i> ${gym.owner}</p>
+            </div>
+            <div class="entity-meta">
+                <span class="reputation-score" style="background: ${getReputationColor(gym.reputation_score)}">
+                    ${gym.reputation_score}%
+                </span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Search gyms
+function searchGyms() {
+    const searchTerm = document.getElementById('gymSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+        displayGyms(gymsData);
+        return;
+    }
+    
+    const filteredGyms = gymsData.filter(gym => 
+        gym.name.toLowerCase().includes(searchTerm) ||
+        gym.location.toLowerCase().includes(searchTerm) ||
+        gym.owner.toLowerCase().includes(searchTerm)
+    );
+    
+    displayGyms(filteredGyms);
+}
+
+// Select a gym
+function selectGym(gymId) {
+    document.getElementById('selectedGymId').value = gymId;
+    
+    // Update UI
+    document.querySelectorAll('.gym-item').forEach(item => {
+        item.classList.remove('selected');
+        if (parseInt(item.dataset.id) === gymId) {
+            item.classList.add('selected');
+        }
+    });
+    
+    updateGymModalButtons(true);
+}
+
+// Update gym modal buttons state
+function updateGymModalButtons(hasSelection) {
+    const saveBtn = document.getElementById('saveGymBtn');
+    const removeBtn = document.getElementById('removeGymBtn');
+    
+    saveBtn.disabled = !hasSelection;
+    removeBtn.style.display = hasSelection ? 'inline-block' : 'none';
+}
+
+// Save gym changes
+async function saveGym() {
+    const gymId = document.getElementById('selectedGymId').value;
+    if (!gymId || !currentFighterId) return;
+    
+    showLoading();
+    try {
+        const response = await fetch(`/api/fighters/${currentFighterId}/gym`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ gym_id: parseInt(gymId) })
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Fighter\'s gym updated successfully!', 'success');
+            
+            // Refresh fighter details
+            await selectFighter(currentFighterId);
+            
+            closeGymModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update gym');
+        }
+    } catch (error) {
+        console.error('Error updating gym:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Remove gym
+async function removeGym() {
+    if (!currentFighterId) return;
+    
+    if (!confirm('Are you sure you want to remove this fighter from their gym?')) {
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`/api/fighters/${currentFighterId}/gym`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ gym_id: null })
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Fighter removed from gym successfully!', 'success');
+            
+            // Refresh fighter details
+            await selectFighter(currentFighterId);
+            
+            closeGymModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to remove gym');
+        }
+    } catch (error) {
+        console.error('Error removing gym:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show add trainer modal
+async function showAddTrainerModal() {
+    if (!currentFighterId) return;
+    
+    showLoading();
+    try {
+        // Load all trainers
+        const response = await fetch('/api/trainers');
+        trainersData = await response.json();
+        
+        // Display trainers
+        displayTrainers(trainersData);
+        
+        // Show modal
+        showAddTrainerModalUI();
+    } catch (error) {
+        console.error('Error loading trainers:', error);
+        showFlashMessage('Failed to load trainers.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display trainers in modal
+function displayTrainers(trainers) {
+    const trainersList = document.getElementById('trainersList');
+    
+    if (trainers.length === 0) {
+        trainersList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-user-tie" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                <p>No trainers found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    trainersList.innerHTML = trainers.map(trainer => `
+        <div class="entity-item trainer-item" data-id="${trainer.trainer_id}" onclick="selectTrainer(${trainer.trainer_id})">
+            <div class="entity-info">
+                <h4>${trainer.name}</h4>
+                <p><i class="fas fa-star"></i> ${trainer.specialty}</p>
+                ${trainer.gym_name ? `
+                    <p><i class="fas fa-dumbbell"></i> ${trainer.gym_name}</p>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Search trainers
+function searchTrainers() {
+    const searchTerm = document.getElementById('trainerSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+        displayTrainers(trainersData);
+        return;
+    }
+    
+    const filteredTrainers = trainersData.filter(trainer => 
+        trainer.name.toLowerCase().includes(searchTerm) ||
+        trainer.specialty.toLowerCase().includes(searchTerm) ||
+        (trainer.gym_name && trainer.gym_name.toLowerCase().includes(searchTerm))
+    );
+    
+    displayTrainers(filteredTrainers);
+}
+
+// Select a trainer
+function selectTrainer(trainerId) {
+    document.getElementById('selectedTrainerId').value = trainerId;
+    
+    // Update UI
+    document.querySelectorAll('.trainer-item').forEach(item => {
+        item.classList.remove('selected');
+        if (parseInt(item.dataset.id) === trainerId) {
+            item.classList.add('selected');
+        }
+    });
+    
+    document.getElementById('addTrainerBtn').disabled = false;
+}
+
+// Add trainer to fighter
+async function addTrainer() {
+    const trainerId = document.getElementById('selectedTrainerId').value;
+    if (!trainerId || !currentFighterId) return;
+    
+    showLoading();
+    try {
+        const response = await fetch(`/api/fighters/${currentFighterId}/trainers`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ trainer_id: parseInt(trainerId) })
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Trainer added successfully!', 'success');
+            
+            // Refresh fighter trainers
+            await loadFighterTrainers(currentFighterId);
+            
+            // Refresh fighters list (for record updates)
+            await loadFighters();
+            
+            closeAddTrainerModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to add trainer');
+        }
+    } catch (error) {
+        console.error('Error adding trainer:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show remove trainer modal
+async function showRemoveTrainerModal() {
+    if (!currentFighterId) return;
+    
+    showLoading();
+    try {
+        // Load fighter's current trainers
+        const response = await fetch(`/api/fighters/${currentFighterId}/trainers`);
+        if (response.ok) {
+            const trainers = await response.json();
+            
+            if (trainers.length === 0) {
+                showFlashMessage('This fighter has no trainers to remove.', 'warning');
+                hideLoading();
+                return;
+            }
+            
+            // Display trainers
+            displayFighterTrainersInModal(trainers);
+            
+            // Show modal
+            showRemoveTrainerModalUI();
+        }
+    } catch (error) {
+        console.error('Error loading fighter trainers:', error);
+        showFlashMessage('Failed to load trainers.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display fighter's trainers in remove modal
+function displayFighterTrainersInModal(trainers) {
+    const trainersList = document.getElementById('fighterTrainersList');
+    
+    trainersList.innerHTML = trainers.map(trainer => `
+        <div class="entity-item trainer-item" data-id="${trainer.trainer_id}" onclick="selectFighterTrainer(${trainer.trainer_id})">
+            <div class="entity-info">
+                <h4>${trainer.name}</h4>
+                <p><i class="fas fa-star"></i> ${trainer.specialty}</p>
+                <p><i class="fas fa-calendar"></i> Since ${new Date(trainer.start_date).toLocaleDateString()}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Search fighter's trainers
+function searchFighterTrainers() {
+    const searchTerm = document.getElementById('fighterTrainerSearch').value.toLowerCase();
+    const allTrainerItems = document.querySelectorAll('#fighterTrainersList .trainer-item');
+    
+    allTrainerItems.forEach(item => {
+        const trainerName = item.querySelector('h4').textContent.toLowerCase();
+        const trainerSpecialty = item.querySelector('p:nth-child(2)').textContent.toLowerCase();
+        
+        if (trainerName.includes(searchTerm) || trainerSpecialty.includes(searchTerm)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Select a fighter's trainer
+function selectFighterTrainer(trainerId) {
+    document.getElementById('selectedFighterTrainerId').value = trainerId;
+    
+    // Update UI
+    document.querySelectorAll('#fighterTrainersList .trainer-item').forEach(item => {
+        item.classList.remove('selected');
+        if (parseInt(item.dataset.id) === trainerId) {
+            item.classList.add('selected');
+        }
+    });
+    
+    document.getElementById('removeTrainerBtn').disabled = false;
+}
+
+// Remove selected trainer
+async function removeSelectedTrainer() {
+    const trainerId = document.getElementById('selectedFighterTrainerId').value;
+    if (!trainerId || !currentFighterId) return;
+    
+    if (!confirm('Are you sure you want to remove this trainer from the fighter?')) {
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`/api/fighters/${currentFighterId}/trainers/${trainerId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Trainer removed successfully!', 'success');
+            
+            // Refresh fighter trainers
+            await loadFighterTrainers(currentFighterId);
+            
+            // Refresh fighters list
+            await loadFighters();
+            
+            closeRemoveTrainerModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to remove trainer');
+        }
+    } catch (error) {
+        console.error('Error removing trainer:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Delete fighter
+async function deleteFighter() {
+    if (!currentFighterId) return;
+    
+    if (!confirm('Are you sure you want to delete this fighter? This action cannot be undone.')) {
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`/api/fighters/${currentFighterId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Fighter deleted successfully!', 'success');
+            
+            // Reset current selection
+            currentFighterId = null;
+            
+            // Reload fighters list
+            await loadFighters();
+            
+            // Close details panel
+            closeFighterPanel();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete fighter');
+        }
+    } catch (error) {
+        console.error('Error deleting fighter:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// View gym (redirect to gyms page)
+function viewGym(gymId) {
+    window.location.href = `/gyms?select=${gymId}`;
+}
+
+// View trainer (redirect to trainers page)
+function viewTrainer(trainerId) {
+    window.location.href = `/trainers?select=${trainerId}`;
+}
+
+// Modal functions
+function showModal() {
+    document.getElementById('fighterModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('fighterModal').style.display = 'none';
+}
+
+function showGymModal() {
+    document.getElementById('gymModal').style.display = 'flex';
+}
+
+function closeGymModal() {
+    document.getElementById('gymModal').style.display = 'none';
+    document.getElementById('gymSearch').value = '';
+    document.getElementById('selectedGymId').value = '';
+}
+
+function showAddTrainerModalUI() {
+    document.getElementById('addTrainerModal').style.display = 'flex';
+}
+
+function closeAddTrainerModal() {
+    document.getElementById('addTrainerModal').style.display = 'none';
+    document.getElementById('trainerSearch').value = '';
+    document.getElementById('selectedTrainerId').value = '';
+    document.getElementById('addTrainerBtn').disabled = true;
+}
+
+function showRemoveTrainerModalUI() {
+    document.getElementById('removeTrainerModal').style.display = 'flex';
+}
+
+function closeRemoveTrainerModal() {
+    document.getElementById('removeTrainerModal').style.display = 'none';
+    document.getElementById('fighterTrainerSearch').value = '';
+    document.getElementById('selectedFighterTrainerId').value = '';
+    document.getElementById('removeTrainerBtn').disabled = true;
+}
+
+// Close fighter panel
+function closeFighterPanel() {
+    document.getElementById('fighterDetailsPanel').style.display = 'none';
+    currentFighterId = null;
+}
+
+// Utility functions
+function getReputationColor(score) {
+    if (score >= 80) return '#2ecc71';
+    if (score >= 60) return '#f39c12';
+    return '#e74c3c';
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showFlashMessage(message, type = 'info') {
+    const flashContainer = document.querySelector('.flash-messages') || createFlashContainer();
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `flash-message ${type}`;
+    messageElement.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+        <span>${message}</span>
+        <button class="close-flash" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    flashContainer.appendChild(messageElement);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (messageElement.parentNode) {
+            messageElement.style.opacity = '0';
+            setTimeout(() => messageElement.remove(), 300);
+        }
+    }, 5000);
+}
+
+function createFlashContainer() {
+    const container = document.createElement('div');
+    container.className = 'flash-messages';
+    document.body.appendChild(container);
+    return container;
+}
+</script>
+
+<style>
+/* Page Header */
+.page-header {
+    margin-top: 7rem;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+/* Fighters Container */
+.fighters-container {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 2rem;
+    height: calc(100vh - 300px); /* Adjust this value */
+    min-height: 500px;
+    margin-bottom: 3rem; /* Add gap above footer */
+    overflow: hidden; /* Container doesn't scroll, panels do */
+}
+
+/* Make both panels scrollable independently */
+.fighters-list-panel {
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.fighter-details-panel {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Make it scrollable */
+    padding-right: 10px;
+}
+
+/* Add a scrollable area for the content inside the details panel */
+.fighter-main-info {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* Optional: Style scrollbars */
+.fighters-list-panel::-webkit-scrollbar,
+.fighter-details-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.fighters-list-panel::-webkit-scrollbar-track,
+.fighter-details-panel::-webkit-scrollbar-track {
+    background: rgba(231, 74, 143, 0.1);
+}
+
+.fighters-list-panel::-webkit-scrollbar-thumb,
+.fighter-details-panel::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 3px;
+}
+
+@media (max-width: 1024px) {
+    .fighters-container {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+}
+
+/* Left Panel - Fighter List */
+.fighters-list-panel {
+    background: var(--gradient-card);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(231, 74, 143, 0.1);
+}
+
+.search-actions-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-box {
+    flex: 1;
+    position: relative;
+}
+
+.search-box i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.8rem 1rem 0.8rem 3rem;
+    background: rgba(10, 10, 10, 0.7);
+    border: 2px solid rgba(231, 74, 143, 0.2);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(231, 74, 143, 0.1);
+}
+
+.create-fighter-btn {
+    padding: 0.8rem 1.5rem;
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.create-fighter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(231, 74, 143, 0.4);
+}
+
+/* Fighter List */
+.fighters-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-right: 0.5rem;
+}
+
+.fighters-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.fighters-list::-webkit-scrollbar-track {
+    background: rgba(231, 74, 143, 0.1);
+    border-radius: 3px;
+}
+
+.fighters-list::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 3px;
+}
+
+.fighter-card {
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 15px;
+    padding: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.fighter-card:hover {
+    border-color: rgba(231, 74, 143, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.fighter-card.selected {
+    border-color: var(--accent-primary);
+    background: rgba(231, 74, 143, 0.1);
+}
+
+.fighter-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.fighter-name h3 {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+}
+
+.fighter-nickname {
+    color: var(--accent-secondary);
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.fighter-status {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.fighter-status.active {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.fighter-status.retired {
+    background: rgba(149, 165, 166, 0.2);
+    color: #95a5a6;
+}
+
+.fighter-status.suspended {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.fighter-card-body {
+    margin-bottom: 1rem;
+}
+
+.fighter-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.fighter-record {
+    display: flex;
+    gap: 1rem;
+}
+
+.record-item {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 8px;
+    background: rgba(10, 10, 10, 0.5);
+}
+
+.record-item.wins {
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.record-item.losses {
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.record-item.draws {
+    border: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.record-count {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.record-item.wins .record-count {
+    color: #2ecc71;
+}
+
+.record-item.losses .record-count {
+    color: #e74c3c;
+}
+
+.record-item.draws .record-count {
+    color: #f1c40f;
+}
+
+.record-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.fighter-card-footer {
+    padding-top: 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Right Panel - Fighter Details */
+.fighter-details-panel {
+    background: var(--gradient-card);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: none;
+    flex-direction: column;
+    border: 1px solid rgba(231, 74, 143, 0.1);
+    overflow-y: auto;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(231, 74, 143, 0.2);
+}
+
+.panel-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    color: var(--text-primary);
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.close-panel-btn:hover {
+    color: var(--accent-primary);
+    background: rgba(231, 74, 143, 0.1);
+}
+
+/* Fighter Main Info */
+.fighter-main-info {
+    flex: 1;
+}
+
+.info-section {
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(231, 74, 143, 0.1);
+}
+
+.section-title {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-title .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.info-item label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 0.5rem 0;
+}
+
+/* Gym Info */
+.gym-card {
+    background: rgba(26, 26, 26, 0.5);
+    border-radius: 10px;
+    padding: 1.2rem;
+    border: 1px solid rgba(231, 74, 143, 0.2);
+}
+
+.gym-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.gym-header h4 {
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.reputation-score {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: white;
+}
+
+.gym-details p {
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Record Display */
+.record-display {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.record-stat {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: 15px;
+    min-width: 120px;
+}
+
+.record-stat.wins {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.05));
+    border: 2px solid rgba(46, 204, 113, 0.3);
+}
+
+.record-stat.losses {
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.05));
+    border: 2px solid rgba(231, 76, 60, 0.3);
+}
+
+.record-stat.draws {
+    background: linear-gradient(135deg, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.05));
+    border: 2px solid rgba(241, 196, 15, 0.3);
+}
+
+.record-stat .stat-number {
+    font-size: 2.5rem;
+    font-weight: 900;
+    font-family: 'Orbitron', sans-serif;
+    margin-bottom: 0.5rem;
+}
+
+.record-stat.wins .stat-number {
+    color: #2ecc71;
+}
+
+.record-stat.losses .stat-number {
+    color: #e74c3c;
+}
+
+.record-stat.draws .stat-number {
+    color: #f1c40f;
+}
+
+.record-stat .stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Trainers List */
+.trainers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.trainer-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(26, 26, 26, 0.5);
+    border-radius: 10px;
+    border: 1px solid rgba(239, 169, 198, 0.2);
+}
+
+.trainer-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.trainer-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.trainer-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Danger Zone */
+.danger-zone {
+    border: 2px solid rgba(231, 76, 60, 0.3);
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.05), transparent);
+}
+
+.danger-actions {
+    text-align: center;
+}
+
+.warning-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+/* Buttons */
+.edit-btn, .view-btn, .add-btn, .remove-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edit-btn {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.edit-btn:hover {
+    background: rgba(52, 152, 219, 0.3);
+    transform: translateY(-2px);
+}
+
+.view-btn {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.view-btn:hover {
+    background: rgba(46, 204, 113, 0.3);
+    transform: translateY(-2px);
+}
+
+.add-btn {
+    background: rgba(155, 89, 182, 0.2);
+    color: #9b59b6;
+    border: 1px solid rgba(155, 89, 182, 0.3);
+}
+
+.add-btn:hover {
+    background: rgba(155, 89, 182, 0.3);
+    transform: translateY(-2px);
+}
+
+.remove-btn {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.remove-btn:hover {
+    background: rgba(231, 76, 60, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(231, 74, 143, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: var(--gradient-card);
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid rgba(231, 74, 143, 0.2);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.modal-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    color: var(--text-primary);
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+    color: var(--accent-primary);
+    background: rgba(231, 74, 143, 0.1);
+}
+
+/* Form Styles */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: rgba(10, 10, 10, 0.7);
+    border: 2px solid rgba(231, 74, 143, 0.2);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(231, 74, 143, 0.1);
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Entity List */
+.entity-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.entity-item {
+    padding: 1rem;
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.entity-item:hover {
+    border-color: rgba(231, 74, 143, 0.3);
+    transform: translateY(-2px);
+}
+
+.entity-item.selected {
+    border-color: var(--accent-primary);
+    background: rgba(231, 74, 143, 0.1);
+}
+
+.entity-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.entity-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.entity-meta {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state h3 {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.placeholder-content {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+/* Loading States */
+.loading-spinner-container {
+    text-align: center;
+    padding: 3rem;
+}
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .fighters-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .fighter-details-panel {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .search-actions-bar {
+        flex-direction: column;
+    }
+    
+    .create-fighter-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .record-display {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .modal-content {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-title {
+        font-size: 1.6rem;
+    }
+    
+    .fighters-list-panel,
+    .fighter-details-panel {
+        padding: 1rem;
+    }
+    
+    .section-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .section-title .action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-primary, .btn-secondary, .btn-danger {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

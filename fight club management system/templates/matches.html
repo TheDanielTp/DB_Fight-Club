@@ -1,0 +1,2289 @@
+{% extends "base.html" %}
+
+{% block title %}Matches Management - Fight Club Management System{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-trophy"></i> Matches Management
+        </h1>
+        <p class="page-subtitle">
+            Manage all matches, results, and fighter records
+        </p>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="matches-container">
+        <!-- Left Panel - Match List -->
+        <div class="matches-list-panel">
+            <!-- Search and Actions Bar -->
+            <div class="search-actions-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="matchSearch" placeholder="Search matches by location or fighter names..." 
+                           onkeyup="searchMatches()">
+                </div>
+                <button class="create-match-btn" onclick="showCreateMatchModal()">
+                    <i class="fas fa-plus"></i> Create New Match
+                </button>
+            </div>
+
+            <!-- Match List -->
+            <div class="matches-list" id="matchesList">
+                <!-- Match cards will be loaded here dynamically -->
+                <div class="loading-spinner-container">
+                    <div class="loading-spinner"></div>
+                    <p>Loading matches...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Match Details (Initially hidden) -->
+        <div class="match-details-panel" id="matchDetailsPanel">
+            <div class="panel-header">
+                <h2 id="selectedMatchTitle">Select a Match</h2>
+                <button class="close-panel-btn" onclick="closeMatchPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Main Match Info -->
+            <div class="match-main-info" id="matchMainInfo">
+                <div class="placeholder-content">
+                    <i class="fas fa-trophy" style="font-size: 4rem; color: var(--accent-secondary); margin-bottom: 1rem;"></i>
+                    <p>Select a match from the list to view details and manage results</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Creating/Editing Match -->
+<div class="modal" id="matchModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="matchModalTitle">Create New Match</h2>
+            <button class="close-modal-btn" onclick="closeMatchModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="matchForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="matchLocation">
+                        <i class="fas fa-map-marker-alt"></i> Location *
+                    </label>
+                    <input type="text" id="matchLocation" name="location" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="matchStartDate">
+                        <i class="fas fa-calendar-alt"></i> Start Date *
+                    </label>
+                    <input type="datetime-local" id="matchStartDate" name="start_date" class="form-input" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="matchEndDate">
+                    <i class="fas fa-calendar-times"></i> End Date (Optional)
+                </label>
+                <input type="datetime-local" id="matchEndDate" name="end_date" class="form-input">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="matchFighter1">
+                        <i class="fas fa-fist-raised"></i> Fighter 1 *
+                    </label>
+                    <select id="matchFighter1" name="fighter1_id" class="form-input" required>
+                        <option value="">Select Fighter 1</option>
+                        <!-- Fighters will be populated dynamically -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="matchFighter2">
+                        <i class="fas fa-fist-raised"></i> Fighter 2 *
+                    </label>
+                    <select id="matchFighter2" name="fighter2_id" class="form-input" required>
+                        <option value="">Select Fighter 2</option>
+                        <!-- Fighters will be populated dynamically -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="matchResult">
+                    <i class="fas fa-trophy"></i> Result
+                </label>
+                <select id="matchResult" name="winner_id" class="form-input">
+                    <option value="0">Draw</option>
+                    <option value="-1">No Contest</option>
+                    <!-- Winner options will be populated dynamically -->
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeMatchModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Match
+                </button>
+            </div>
+            
+            <input type="hidden" id="matchId" name="match_id">
+        </form>
+    </div>
+</div>
+
+<!-- Modal for Changing Fighters (Step 1: Select which fighter to replace) -->
+<div class="modal" id="changeFighterStep1Modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Fighter</h2>
+            <button class="close-modal-btn" onclick="closeChangeFighterStep1Modal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="instruction-text">
+            <p>Select which fighter you want to replace:</p>
+        </div>
+        
+        <div class="fighter-selection" id="fighterSelection">
+            <!-- Fighter options will be loaded here -->
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeChangeFighterStep1Modal()">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Changing Fighters (Step 2: Select replacement fighter) -->
+<div class="modal" id="changeFighterStep2Modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Select Replacement Fighter</h2>
+            <button class="close-modal-btn" onclick="closeChangeFighterStep2Modal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="search-box" style="margin-bottom: 1.5rem;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="replacementFighterSearch" placeholder="Search fighters..." 
+                   onkeyup="searchReplacementFighters()">
+        </div>
+        
+        <div class="entity-list" id="replacementFightersList">
+            <!-- Replacement fighters will be loaded here -->
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeChangeFighterStep2Modal()">
+                Cancel
+            </button>
+            <button type="button" class="btn-primary" onclick="confirmFighterReplacement()" id="confirmReplacementBtn" disabled>
+                <i class="fas fa-check"></i> Replace Fighter
+            </button>
+        </div>
+        
+        <input type="hidden" id="oldFighterId">
+        <input type="hidden" id="replacementFighterId">
+    </div>
+</div>
+
+<!-- Modal for Changing Match Info -->
+<div class="modal" id="changeMatchInfoModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Match Information</h2>
+            <button class="close-modal-btn" onclick="closeChangeMatchInfoModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="matchInfoForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="editMatchLocation">
+                        <i class="fas fa-map-marker-alt"></i> Location
+                    </label>
+                    <input type="text" id="editMatchLocation" name="location" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="editMatchStartDate">
+                        <i class="fas fa-calendar-alt"></i> Start Date
+                    </label>
+                    <input type="datetime-local" id="editMatchStartDate" name="start_date" class="form-input" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="editMatchEndDate">
+                    <i class="fas fa-calendar-times"></i> End Date (Optional)
+                </label>
+                <input type="datetime-local" id="editMatchEndDate" name="end_date" class="form-input">
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeChangeMatchInfoModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal for Changing Match Result -->
+<div class="modal" id="changeMatchResultModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Match Result</h2>
+            <button class="close-modal-btn" onclick="closeChangeMatchResultModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="instruction-text">
+            <p>Select the result of the match:</p>
+        </div>
+        
+        <div class="result-options" id="resultOptions">
+            <!-- Result options will be loaded here -->
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeChangeMatchResultModal()">
+                Cancel
+            </button>
+            <button type="button" class="btn-primary" onclick="saveMatchResult()" id="saveResultBtn" disabled>
+                <i class="fas fa-check"></i> Save Result
+            </button>
+        </div>
+        
+        <input type="hidden" id="selectedWinnerId">
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+    </div>
+</div>
+
+<script>
+// Global variables
+let currentMatchId = null;
+let matchesData = [];
+let fightersData = [];
+let currentFighter1Id = null;
+let currentFighter2Id = null;
+let oldFighterIdToReplace = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadMatches();
+});
+
+// Load all matches
+async function loadMatches() {
+    showLoading();
+    try {
+        const response = await fetch('/api/matches');
+        if (response.ok) {
+            matchesData = await response.json();
+            displayMatches(matchesData);
+        } else {
+            throw new Error('Failed to load matches');
+        }
+    } catch (error) {
+        console.error('Error loading matches:', error);
+        showFlashMessage('Failed to load matches. Please try again.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display matches in the list
+function displayMatches(matches) {
+    const matchesList = document.getElementById('matchesList');
+    
+    if (matches.length === 0) {
+        matchesList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-trophy" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <h3>No Matches Found</h3>
+                <p>Create your first match to get started</p>
+            </div>
+        `;
+        return;
+    }
+    
+    matchesList.innerHTML = matches.map(match => `
+        <div class="match-card" data-id="${match.match_id}" onclick="selectMatch(${match.match_id})">
+            <div class="match-card-header">
+                <div class="match-location">
+                    <h3><i class="fas fa-map-marker-alt"></i> ${match.location}</h3>
+                </div>
+                <div class="match-date">
+                    ${formatDateTime(match.start_date)}
+                </div>
+            </div>
+            
+            <div class="match-card-body">
+                <div class="fighters-display">
+                    <div class="fighter-left ${match.fighter1_result === 'win' ? 'winner' : ''}">
+                        <div class="fighter-name">${match.fighter1_name}</div>
+                        <div class="fighter-nickname">${match.fighter1_nickname || ''}</div>
+                        <div class="fighter-result ${match.fighter1_result}">
+                            ${getResultText(match.fighter1_result)}
+                        </div>
+                    </div>
+                    
+                    <div class="vs-divider">
+                        <span>VS</span>
+                    </div>
+                    
+                    <div class="fighter-right ${match.fighter2_result === 'win' ? 'winner' : ''}">
+                        <div class="fighter-name">${match.fighter2_name}</div>
+                        <div class="fighter-nickname">${match.fighter2_nickname || ''}</div>
+                        <div class="fighter-result ${match.fighter2_result}">
+                            ${getResultText(match.fighter2_result)}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="match-details">
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        ${match.duration ? formatDuration(match.duration) : 'Ongoing'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Format date time for display
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString();
+}
+
+// Format duration for display
+function formatDuration(duration) {
+    if (!duration) return 'N/A';
+    
+    // Parse PostgreSQL interval format (e.g., "01:30:00")
+    const parts = duration.split(':');
+    if (parts.length >= 3) {
+        const hours = parseInt(parts[0]);
+        const minutes = parseInt(parts[1]);
+        const seconds = parseInt(parts[2]);
+        
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${seconds}s`;
+        } else {
+            return `${seconds}s`;
+        }
+    }
+    return duration;
+}
+
+// Get result text
+function getResultText(result) {
+    switch(result) {
+        case 'win': return 'W';
+        case 'loss': return 'L';
+        case 'draw': return 'D';
+        case 'no contest': return 'NC';
+        default: return '-';
+    }
+}
+
+// Search matches
+function searchMatches() {
+    const searchTerm = document.getElementById('matchSearch').value.toLowerCase();
+    
+    if (!searchTerm) {
+        displayMatches(matchesData);
+        return;
+    }
+    
+    const filteredMatches = matchesData.filter(match => 
+        match.location.toLowerCase().includes(searchTerm) ||
+        match.fighter1_name.toLowerCase().includes(searchTerm) ||
+        match.fighter2_name.toLowerCase().includes(searchTerm) ||
+        (match.fighter1_nickname && match.fighter1_nickname.toLowerCase().includes(searchTerm)) ||
+        (match.fighter2_nickname && match.fighter2_nickname.toLowerCase().includes(searchTerm))
+    );
+    
+    displayMatches(filteredMatches);
+}
+
+// Select a match
+async function selectMatch(matchId) {
+    showLoading();
+    try {
+        const response = await fetch(`/api/matches/${matchId}`);
+        console.log(`DEBUG: Fetch response status: ${response.status}`);
+        console.log(`DEBUG: Fetch response ok: ${response.ok}`);
+        
+        if (response.ok) {
+            const match = await response.json();
+            console.log(`DEBUG: Match data received:`, match);
+            currentMatchId = matchId;
+            currentFighter1Id = match.fighter1_id;
+            currentFighter2Id = match.fighter2_id;
+            displayMatchDetails(match);
+            
+            // Show the details panel
+            document.getElementById('matchDetailsPanel').style.display = 'flex';
+        } else {
+            const error = await response.json();
+            console.log(`DEBUG: Error response:`, error);
+            throw new Error(error.error || 'Failed to load match details');
+        }
+    } catch (error) {
+        console.error('Error loading match details:', error);
+        showFlashMessage('Failed to load match details. Please try again.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Display match details
+function displayMatchDetails(match) {
+    const panel = document.getElementById('matchMainInfo');
+    
+    panel.innerHTML = `
+        <!-- Match Info Section -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-info-circle"></i> Match Information
+                <button class="edit-btn" onclick="showChangeMatchInfoModal()">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            </h3>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <label><i class="fas fa-map-marker-alt"></i> Location</label>
+                    <span class="info-value" id="infoLocation">${match.location}</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-calendar-alt"></i> Start Date</label>
+                    <span class="info-value" id="infoStartDate">${formatDateTime(match.start_date)}</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-calendar-times"></i> End Date</label>
+                    <span class="info-value" id="infoEndDate">${match.end_date ? formatDateTime(match.end_date) : 'Ongoing'}</span>
+                </div>
+                <div class="info-item">
+                    <label><i class="fas fa-clock"></i> Duration</label>
+                    <span class="info-value" id="infoDuration">${match.duration ? formatDuration(match.duration) : 'Ongoing'}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fighters Section -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-fist-raised"></i> Fighters
+                <button class="edit-btn" onclick="showChangeFighterStep1Modal()">
+                    <i class="fas fa-exchange-alt"></i> Change Fighter
+                </button>
+            </h3>
+            
+            <div class="fighters-comparison">
+                <div class="fighter-details ${match.fighter1_result === 'win' ? 'winner' : ''}">
+                    <div class="fighter-header">
+                        <h4>${match.fighter1_name}</h4>
+                        <span class="fighter-nickname">"${match.fighter1_nickname || 'No Nickname'}"</span>
+                    </div>
+                    <div class="fighter-stats">
+                        <div class="stat-item">
+                            <label>Weight Class</label>
+                            <span>${match.fighter1_weight_class || 'N/A'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>Result</label>
+                            <span class="result-badge ${match.fighter1_result}">
+                                ${getResultText(match.fighter1_result)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="fighter-actions">
+                        <button class="view-btn" onclick="viewFighter(${match.fighter1_id})">
+                            <i class="fas fa-eye"></i> View Fighter
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="vs-center">
+                    <span class="vs-text">VS</span>
+                </div>
+                
+                <div class="fighter-details ${match.fighter2_result === 'win' ? 'winner' : ''}">
+                    <div class="fighter-header">
+                        <h4>${match.fighter2_name}</h4>
+                        <span class="fighter-nickname">"${match.fighter2_nickname || 'No Nickname'}"</span>
+                    </div>
+                    <div class="fighter-stats">
+                        <div class="stat-item">
+                            <label>Weight Class</label>
+                            <span>${match.fighter2_weight_class || 'N/A'}</span>
+                        </div>
+                        <div class="stat-item">
+                            <label>Result</label>
+                            <span class="result-badge ${match.fighter2_result}">
+                                ${getResultText(match.fighter2_result)}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="fighter-actions">
+                        <button class="view-btn" onclick="viewFighter(${match.fighter2_id})">
+                            <i class="fas fa-eye"></i> View Fighter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Result Section -->
+        <div class="info-section">
+            <h3 class="section-title">
+                <i class="fas fa-trophy"></i> Match Result
+                <button class="edit-btn" onclick="showChangeMatchResultModal()">
+                    <i class="fas fa-edit"></i> Change Result
+                </button>
+            </h3>
+            
+            <div class="result-display">
+                ${getResultDisplay(match)}
+            </div>
+        </div>
+        
+        <!-- Danger Zone -->
+        <div class="info-section danger-zone">
+            <h3 class="section-title">
+                <i class="fas fa-exclamation-triangle"></i> Danger Zone
+            </h3>
+            
+            <div class="danger-actions">
+                <button class="btn-danger" onclick="deleteMatch()">
+                    <i class="fas fa-trash"></i> Delete Match
+                </button>
+                <p class="warning-text">
+                    <i class="fas fa-exclamation-circle"></i>
+                    This action cannot be undone. The match will be permanently deleted, and fighter records will be adjusted accordingly.
+                </p>
+            </div>
+        </div>
+    `;
+    
+    // Update panel title
+    document.getElementById('selectedMatchTitle').textContent = 
+        `${match.fighter1_name} vs ${match.fighter2_name} - ${match.location}`;
+}
+
+// Get result display HTML
+function getResultDisplay(match) {
+    if (match.fighter1_result === 'win') {
+        return `
+            <div class="winner-announcement">
+                <div class="winner-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="winner-info">
+                    <h4>Winner: ${match.fighter1_name}</h4>
+                    <p>Defeated ${match.fighter2_name}</p>
+                </div>
+            </div>
+        `;
+    } else if (match.fighter2_result === 'win') {
+        return `
+            <div class="winner-announcement">
+                <div class="winner-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="winner-info">
+                    <h4>Winner: ${match.fighter2_name}</h4>
+                    <p>Defeated ${match.fighter1_name}</p>
+                </div>
+            </div>
+        `;
+    } else if (match.fighter1_result === 'draw') {
+        return `
+            <div class="draw-announcement">
+                <div class="draw-icon">
+                    <i class="fas fa-handshake"></i>
+                </div>
+                <div class="draw-info">
+                    <h4>Draw</h4>
+                    <p>${match.fighter1_name} and ${match.fighter2_name} fought to a draw</p>
+                </div>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="nc-announcement">
+                <div class="nc-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="nc-info">
+                    <h4>No Contest</h4>
+                    <p>The match was declared a no contest</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Show create match modal
+async function showCreateMatchModal() {
+    document.getElementById('matchModalTitle').textContent = 'Create New Match';
+    document.getElementById('matchForm').reset();
+    document.getElementById('matchId').value = '';
+    
+    // Set default dates
+    const now = new Date();
+    const startDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    document.getElementById('matchStartDate').value = startDate;
+    
+    // Load fighters for dropdown
+    showLoading();
+    try {
+        const response = await fetch('/api/fighters');
+        if (response.ok) {
+            fightersData = await response.json();
+            
+            const fighter1Select = document.getElementById('matchFighter1');
+            const fighter2Select = document.getElementById('matchFighter2');
+            const resultSelect = document.getElementById('matchResult');
+            
+            // Populate fighter selects
+            fighter1Select.innerHTML = '<option value="">Select Fighter 1</option>';
+            fighter2Select.innerHTML = '<option value="">Select Fighter 2</option>';
+            
+            fightersData.forEach(fighter => {
+                fighter1Select.innerHTML += `
+                    <option value="${fighter.fighter_id}">
+                        ${fighter.name} ${fighter.nickname ? `"${fighter.nickname}"` : ''} - ${fighter.weight_class}
+                    </option>
+                `;
+                fighter2Select.innerHTML += `
+                    <option value="${fighter.fighter_id}">
+                        ${fighter.name} ${fighter.nickname ? `"${fighter.nickname}"` : ''} - ${fighter.weight_class}
+                    </option>
+                `;
+            });
+            
+            // Clear winner options (will be populated when fighters are selected)
+            resultSelect.innerHTML = `
+                <option value="0">Draw</option>
+                <option value="-1">No Contest</option>
+            `;
+            
+            // Add event listeners to update winner options
+            fighter1Select.addEventListener('change', updateWinnerOptions);
+            fighter2Select.addEventListener('change', updateWinnerOptions);
+            
+            document.getElementById('matchModal').style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error loading fighters:', error);
+        showFlashMessage('Failed to load fighters.', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Update winner options when fighters are selected
+function updateWinnerOptions() {
+    const fighter1Id = document.getElementById('matchFighter1').value;
+    const fighter2Id = document.getElementById('matchFighter2').value;
+    const resultSelect = document.getElementById('matchResult');
+    
+    if (fighter1Id && fighter2Id) {
+        const fighter1 = fightersData.find(f => f.fighter_id == fighter1Id);
+        const fighter2 = fightersData.find(f => f.fighter_id == fighter2Id);
+        
+        if (fighter1 && fighter2) {
+            resultSelect.innerHTML = `
+                <option value="0">Draw</option>
+                <option value="-1">No Contest</option>
+                <option value="${fighter1Id}">${fighter1.name} wins</option>
+                <option value="${fighter2Id}">${fighter2.name} wins</option>
+            `;
+        }
+    }
+}
+
+// Save match (create or update)
+async function saveMatch(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('matchForm');
+    const formData = new FormData(form);
+    const matchData = Object.fromEntries(formData);
+    
+    // Validate fighters are different
+    if (matchData.fighter1_id === matchData.fighter2_id) {
+        showFlashMessage('Fighters must be different.', 'error');
+        return;
+    }
+    
+    // Convert dates to ISO format
+    if (matchData.start_date) {
+        matchData.start_date = new Date(matchData.start_date).toISOString();
+    }
+    if (matchData.end_date) {
+        matchData.end_date = new Date(matchData.end_date).toISOString();
+    }
+    
+    const isEdit = !!matchData.match_id;
+    const url = isEdit ? `/api/matches/${matchData.match_id}` : '/api/matches';
+    const method = isEdit ? 'PUT' : 'POST';
+    
+    showLoading();
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(matchData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showFlashMessage(isEdit ? 'Match updated successfully!' : 'Match created successfully!', 'success');
+            
+            // Reload matches list
+            await loadMatches();
+            
+            // If we were editing the currently selected match, refresh details
+            if (isEdit && currentMatchId === parseInt(matchData.match_id)) {
+                await selectMatch(currentMatchId);
+            }
+            
+            closeMatchModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to save match');
+        }
+    } catch (error) {
+        console.error('Error saving match:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show change fighter step 1 modal
+function showChangeFighterStep1Modal() {
+    if (!currentMatchId) return;
+    
+    // Get current match details to display fighters
+    fetch(`/api/matches/${currentMatchId}`)
+        .then(response => response.json())
+        .then(match => {
+            const fighterSelection = document.getElementById('fighterSelection');
+            
+            fighterSelection.innerHTML = `
+                <div class="fighter-option" onclick="selectFighterToReplace(${match.fighter1_id}, '${match.fighter1_name}')">
+                    <div class="fighter-option-info">
+                        <h4>${match.fighter1_name}</h4>
+                        <p>${match.fighter1_nickname ? `"${match.fighter1_nickname}"` : 'No Nickname'}</p>
+                        <p>Current Result: <span class="${match.fighter1_result}">${getResultText(match.fighter1_result)}</span></p>
+                    </div>
+                    <div class="fighter-option-action">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                </div>
+                
+                <div class="fighter-option" onclick="selectFighterToReplace(${match.fighter2_id}, '${match.fighter2_name}')">
+                    <div class="fighter-option-info">
+                        <h4>${match.fighter2_name}</h4>
+                        <p>${match.fighter2_nickname ? `"${match.fighter2_nickname}"` : 'No Nickname'}</p>
+                        <p>Current Result: <span class="${match.fighter2_result}">${getResultText(match.fighter2_result)}</span></p>
+                    </div>
+                    <div class="fighter-option-action">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('changeFighterStep1Modal').style.display = 'flex';
+        })
+        .catch(error => {
+            console.error('Error loading match:', error);
+            showFlashMessage('Failed to load match details.', 'error');
+        });
+}
+
+// Select which fighter to replace
+function selectFighterToReplace(fighterId, fighterName) {
+    oldFighterIdToReplace = fighterId;
+    
+    // Load available fighters (excluding current ones)
+    showLoading();
+    fetch('/api/fighters')
+        .then(response => response.json())
+        .then(fighters => {
+            // Filter out current fighters
+            const availableFighters = fighters.filter(fighter => 
+                fighter.fighter_id != currentFighter1Id && 
+                fighter.fighter_id != currentFighter2Id
+            );
+            
+            displayReplacementFighters(availableFighters);
+            
+            // Update instruction
+            document.querySelector('#changeFighterStep2Modal .modal-header h2').textContent = 
+                `Replace ${fighterName}`;
+            
+            // Close step 1 and open step 2
+            closeChangeFighterStep1Modal();
+            document.getElementById('changeFighterStep2Modal').style.display = 'flex';
+        })
+        .catch(error => {
+            console.error('Error loading fighters:', error);
+            showFlashMessage('Failed to load fighters.', 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+}
+
+// Display replacement fighters
+function displayReplacementFighters(fighters) {
+    const fightersList = document.getElementById('replacementFightersList');
+    
+    if (fighters.length === 0) {
+        fightersList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-user" style="font-size: 2rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                <p>No available fighters</p>
+                <p>All fighters are already in this match</p>
+            </div>
+        `;
+        return;
+    }
+    
+    fightersList.innerHTML = fighters.map(fighter => `
+        <div class="entity-item fighter-item" data-id="${fighter.fighter_id}" onclick="selectReplacementFighter(${fighter.fighter_id})">
+            <div class="entity-info">
+                <h4>${fighter.name}</h4>
+                <p>${fighter.nickname ? `"${fighter.nickname}"` : 'No Nickname'}</p>
+                <p><i class="fas fa-weight"></i> ${fighter.weight_class}</p>
+                <div class="fighter-record">
+                    <span class="record-badge">
+                        ${fighter.wins || 0}-${fighter.losses || 0}-${fighter.draws || 0}
+                    </span>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Search replacement fighters
+function searchReplacementFighters() {
+    const searchTerm = document.getElementById('replacementFighterSearch').value.toLowerCase();
+    const allFighterItems = document.querySelectorAll('#replacementFightersList .fighter-item');
+    
+    allFighterItems.forEach(item => {
+        const fighterName = item.querySelector('h4').textContent.toLowerCase();
+        
+        if (fighterName.includes(searchTerm)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Select replacement fighter
+function selectReplacementFighter(fighterId) {
+    document.getElementById('replacementFighterId').value = fighterId;
+    
+    document.querySelectorAll('.fighter-item').forEach(item => {
+        item.classList.remove('selected');
+        if (parseInt(item.dataset.id) === fighterId) {
+            item.classList.add('selected');
+        }
+    });
+    
+    document.getElementById('confirmReplacementBtn').disabled = false;
+}
+
+// Confirm fighter replacement
+async function confirmFighterReplacement() {
+    const oldFighterId = oldFighterIdToReplace;
+    const newFighterId = document.getElementById('replacementFighterId').value;
+    
+    if (!oldFighterId || !newFighterId || !currentMatchId) return;
+    
+    if (!confirm('Are you sure you want to replace this fighter? This will update both fighters\' records.')) {
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch('/api/match/update_fighter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                match_id: currentMatchId,
+                old_fighter_id: oldFighterId,
+                new_fighter_id: newFighterId
+            })
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Fighter replaced successfully!', 'success');
+            
+            // Refresh match details
+            await selectMatch(currentMatchId);
+            
+            closeChangeFighterStep2Modal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to replace fighter');
+        }
+    } catch (error) {
+        console.error('Error replacing fighter:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show change match info modal
+function showChangeMatchInfoModal() {
+    if (!currentMatchId) return;
+    
+    // Load current match details
+    fetch(`/api/matches/${currentMatchId}`)
+        .then(response => response.json())
+        .then(match => {
+            // Format dates for datetime-local input
+            const formatForInput = (dateString) => {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                return date.toISOString().slice(0, 16);
+            };
+            
+            document.getElementById('editMatchLocation').value = match.location;
+            document.getElementById('editMatchStartDate').value = formatForInput(match.start_date);
+            document.getElementById('editMatchEndDate').value = formatForInput(match.end_date);
+            
+            document.getElementById('changeMatchInfoModal').style.display = 'flex';
+        })
+        .catch(error => {
+            console.error('Error loading match:', error);
+            showFlashMessage('Failed to load match details.', 'error');
+        });
+}
+
+// Save match info changes
+async function saveMatchInfo(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('matchInfoForm');
+    const formData = new FormData(form);
+    const matchData = Object.fromEntries(formData);
+    
+    // Convert dates to ISO format
+    if (matchData.start_date) {
+        matchData.start_date = new Date(matchData.start_date).toISOString();
+    }
+    if (matchData.end_date) {
+        matchData.end_date = new Date(matchData.end_date).toISOString();
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`/api/matches/${currentMatchId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(matchData)
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Match information updated successfully!', 'success');
+            
+            // Refresh match details
+            await selectMatch(currentMatchId);
+            
+            closeChangeMatchInfoModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update match information');
+        }
+    } catch (error) {
+        console.error('Error updating match:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Show change match result modal
+function showChangeMatchResultModal() {
+    if (!currentMatchId) return;
+    
+    // Load current match details
+    fetch(`/api/matches/${currentMatchId}`)
+        .then(response => response.json())
+        .then(match => {
+            const resultOptions = document.getElementById('resultOptions');
+            
+            resultOptions.innerHTML = `
+                <div class="result-option" onclick="selectMatchResult(0)">
+                    <div class="result-icon">
+                        <i class="fas fa-handshake"></i>
+                    </div>
+                    <div class="result-info">
+                        <h4>Draw</h4>
+                        <p>Both fighters receive a draw</p>
+                    </div>
+                </div>
+                
+                <div class="result-option" onclick="selectMatchResult(-1)">
+                    <div class="result-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="result-info">
+                        <h4>No Contest</h4>
+                        <p>Match declared invalid</p>
+                    </div>
+                </div>
+                
+                <div class="result-option" onclick="selectMatchResult(${match.fighter1_id})">
+                    <div class="result-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="result-info">
+                        <h4>${match.fighter1_name} Wins</h4>
+                        <p>${match.fighter1_name} defeats ${match.fighter2_name}</p>
+                    </div>
+                </div>
+                
+                <div class="result-option" onclick="selectMatchResult(${match.fighter2_id})">
+                    <div class="result-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="result-info">
+                        <h4>${match.fighter2_name} Wins</h4>
+                        <p>${match.fighter2_name} defeats ${match.fighter1_name}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('changeMatchResultModal').style.display = 'flex';
+        })
+        .catch(error => {
+            console.error('Error loading match:', error);
+            showFlashMessage('Failed to load match details.', 'error');
+        });
+}
+
+// Select match result
+function selectMatchResult(winnerId) {
+    document.getElementById('selectedWinnerId').value = winnerId;
+    
+    document.querySelectorAll('.result-option').forEach(item => {
+        item.classList.remove('selected');
+        // Check if this option corresponds to the selected winner
+        const clickHandler = item.getAttribute('onclick');
+        if (clickHandler && clickHandler.includes(`selectMatchResult(${winnerId})`)) {
+            item.classList.add('selected');
+        }
+    });
+    
+    document.getElementById('saveResultBtn').disabled = false;
+}
+
+// Save match result
+async function saveMatchResult() {
+    const winnerId = document.getElementById('selectedWinnerId').value;
+    if (!currentMatchId) return;
+    
+    showLoading();
+    try {
+        const response = await fetch('/api/match/update_result', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                match_id: currentMatchId,
+                winner_id: parseInt(winnerId)
+            })
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Match result updated successfully!', 'success');
+            
+            // Refresh match details
+            await selectMatch(currentMatchId);
+            
+            closeChangeMatchResultModal();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update match result');
+        }
+    } catch (error) {
+        console.error('Error updating match result:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Delete match
+async function deleteMatch() {
+    if (!currentMatchId) return;
+    
+    if (!confirm('Are you sure you want to delete this match? This will adjust fighter records accordingly.')) {
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`/api/matches/${currentMatchId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showFlashMessage('Match deleted successfully!', 'success');
+            
+            currentMatchId = null;
+            await loadMatches();
+            closeMatchPanel();
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete match');
+        }
+    } catch (error) {
+        console.error('Error deleting match:', error);
+        showFlashMessage(error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// View fighter
+function viewFighter(fighterId) {
+    window.location.href = `/fighters?select=${fighterId}`;
+}
+
+// Modal functions
+function closeMatchModal() {
+    document.getElementById('matchModal').style.display = 'none';
+    // Remove event listeners to prevent duplicates
+    const fighter1Select = document.getElementById('matchFighter1');
+    const fighter2Select = document.getElementById('matchFighter2');
+    fighter1Select.removeEventListener('change', updateWinnerOptions);
+    fighter2Select.removeEventListener('change', updateWinnerOptions);
+}
+
+function closeChangeFighterStep1Modal() {
+    document.getElementById('changeFighterStep1Modal').style.display = 'none';
+}
+
+function closeChangeFighterStep2Modal() {
+    document.getElementById('changeFighterStep2Modal').style.display = 'none';
+    document.getElementById('replacementFighterSearch').value = '';
+    document.getElementById('oldFighterId').value = '';
+    document.getElementById('replacementFighterId').value = '';
+    document.getElementById('confirmReplacementBtn').disabled = true;
+}
+
+function closeChangeMatchInfoModal() {
+    document.getElementById('changeMatchInfoModal').style.display = 'none';
+}
+
+function closeChangeMatchResultModal() {
+    document.getElementById('changeMatchResultModal').style.display = 'none';
+    document.getElementById('selectedWinnerId').value = '';
+    document.getElementById('saveResultBtn').disabled = true;
+}
+
+// Close match panel
+function closeMatchPanel() {
+    document.getElementById('matchDetailsPanel').style.display = 'none';
+    currentMatchId = null;
+    currentFighter1Id = null;
+    currentFighter2Id = null;
+}
+
+// Utility functions
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showFlashMessage(message, type = 'info') {
+    const flashContainer = document.querySelector('.flash-messages') || createFlashContainer();
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `flash-message ${type}`;
+    messageElement.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+        <span>${message}</span>
+        <button class="close-flash" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    flashContainer.appendChild(messageElement);
+    
+    setTimeout(() => {
+        if (messageElement.parentNode) {
+            messageElement.style.opacity = '0';
+            setTimeout(() => messageElement.remove(), 300);
+        }
+    }, 5000);
+}
+
+function createFlashContainer() {
+    const container = document.createElement('div');
+    container.className = 'flash-messages';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Initialize form submission
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('matchForm').addEventListener('submit', saveMatch);
+    document.getElementById('matchInfoForm').addEventListener('submit', saveMatchInfo);
+});
+</script>
+
+<style>
+/* Page Header */
+.page-header {
+    margin-top: 7rem;
+    margin-bottom: 2rem;
+}
+
+.page-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+/* Matches Container */
+.matches-container {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 2rem;
+    height: calc(100vh - 300px);
+    min-height: 500px;
+    margin-bottom: 3rem;
+    overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+    .matches-container {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+}
+
+/* Left Panel - Match List */
+.matches-list-panel {
+    background: var(--gradient-card);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(241, 196, 15, 0.1);
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.search-actions-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-box {
+    flex: 1;
+    position: relative;
+}
+
+.search-box i {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.8rem 1rem 0.8rem 3rem;
+    background: rgba(10, 10, 10, 0.7);
+    border: 2px solid rgba(241, 196, 15, 0.2);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #f1c40f;
+    box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.1);
+}
+
+.create-match-btn {
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #f1c40f, #f39c12);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.create-match-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+}
+
+/* Match List */
+.matches-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-right: 0.5rem;
+}
+
+.match-card {
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 15px;
+    padding: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.match-card:hover {
+    border-color: rgba(241, 196, 15, 0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.match-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.match-location h3 {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.match-date {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.match-card-body {
+    margin-bottom: 1rem;
+}
+
+.fighters-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.fighter-left, .fighter-right {
+    flex: 1;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 10px;
+    background: rgba(26, 26, 26, 0.5);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.fighter-left.winner, .fighter-right.winner {
+    border-color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.fighter-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.fighter-nickname {
+    font-size: 0.9rem;
+    color: var(--accent-secondary);
+    font-style: italic;
+    margin-bottom: 0.5rem;
+}
+
+.fighter-result {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+}
+
+.fighter-result.win {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.fighter-result.loss {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.fighter-result.draw {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+}
+
+.fighter-result.no-contest {
+    background: rgba(149, 165, 166, 0.2);
+    color: #95a5a6;
+}
+
+.vs-divider {
+    min-width: 50px;
+    text-align: center;
+}
+
+.vs-divider span {
+    background: var(--gradient-primary);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.match-details {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.detail-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Right Panel - Match Details */
+.match-details-panel {
+    background: var(--gradient-card);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: none;
+    flex-direction: column;
+    border: 1px solid rgba(241, 196, 15, 0.1);
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(241, 196, 15, 0.2);
+}
+
+.panel-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    color: var(--text-primary);
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.close-panel-btn:hover {
+    color: #f1c40f;
+    background: rgba(241, 196, 15, 0.1);
+}
+
+/* Match Main Info */
+.match-main-info {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+}
+
+/* Info Sections */
+.info-section {
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(241, 196, 15, 0.1);
+}
+
+.section-title {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-title .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.info-item label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 0.5rem 0;
+}
+
+/* Fighters Comparison */
+.fighters-comparison {
+    display: flex;
+    align-items: stretch;
+    gap: 2rem;
+}
+
+.fighter-details {
+    flex: 1;
+    background: rgba(26, 26, 26, 0.5);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 2px solid rgba(231, 74, 143, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.fighter-details.winner {
+    border-color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.fighter-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.fighter-header h4 {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.fighter-nickname {
+    color: var(--accent-secondary);
+    font-style: italic;
+    font-size: 0.95rem;
+}
+
+.fighter-stats {
+    flex: 1;
+}
+
+.stat-item {
+    margin-bottom: 1rem;
+}
+
+.stat-item label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.stat-item span {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.result-badge {
+    display: inline-block;
+    padding: 0.3rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+}
+
+.result-badge.win {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+}
+
+.result-badge.loss {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.result-badge.draw {
+    background: rgba(241, 196, 15, 0.2);
+    color: #f1c40f;
+}
+
+.result-badge.no-contest {
+    background: rgba(149, 165, 166, 0.2);
+    color: #95a5a6;
+}
+
+.fighter-actions {
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vs-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+}
+
+.vs-text {
+    background: var(--gradient-primary);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Result Display */
+.result-display {
+    text-align: center;
+    padding: 2rem;
+}
+
+.winner-announcement, .draw-announcement, .nc-announcement {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.winner-icon, .draw-icon, .nc-icon {
+    font-size: 3rem;
+}
+
+.winner-icon {
+    color: #f1c40f;
+}
+
+.draw-icon {
+    color: #3498db;
+}
+
+.nc-icon {
+    color: #95a5a6;
+}
+
+.winner-info h4, .draw-info h4, .nc-info h4 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.winner-info p, .draw-info p, .nc-info p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Danger Zone */
+.danger-zone {
+    border: 2px solid rgba(231, 76, 60, 0.3);
+    background: linear-gradient(135deg, rgba(231, 76, 60, 0.05), transparent);
+}
+
+.danger-actions {
+    text-align: center;
+}
+
+.warning-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    text-align: center;
+}
+
+/* Buttons */
+.edit-btn, .view-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edit-btn {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.edit-btn:hover {
+    background: rgba(52, 152, 219, 0.3);
+    transform: translateY(-2px);
+}
+
+.view-btn {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.view-btn:hover {
+    background: rgba(46, 204, 113, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-primary, .btn-secondary, .btn-danger {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #f1c40f, #f39c12);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-content {
+    background: var(--gradient-card);
+    border-radius: 20px;
+    padding: 2rem;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid rgba(241, 196, 15, 0.2);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.modal-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    color: var(--text-primary);
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+    color: #f1c40f;
+    background: rgba(241, 196, 15, 0.1);
+}
+
+/* Instruction Text */
+.instruction-text {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--text-secondary);
+}
+
+/* Fighter Selection */
+.fighter-selection {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.fighter-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem;
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.fighter-option:hover {
+    border-color: rgba(52, 152, 219, 0.3);
+    transform: translateY(-2px);
+}
+
+.fighter-option-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.fighter-option-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem;
+}
+
+.fighter-option-action {
+    color: #3498db;
+    font-size: 1.5rem;
+}
+
+/* Result Options */
+.result-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.result-option {
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 10px;
+    padding: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    text-align: center;
+}
+
+.result-option:hover {
+    border-color: rgba(46, 204, 113, 0.3);
+    transform: translateY(-2px);
+}
+
+.result-option.selected {
+    border-color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.result-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.result-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.result-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Form Styles */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-group {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: rgba(10, 10, 10, 0.7);
+    border: 2px solid rgba(241, 196, 15, 0.2);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #f1c40f;
+    box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.1);
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Entity List */
+.entity-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.entity-item {
+    padding: 1rem;
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.entity-item:hover {
+    border-color: rgba(241, 196, 15, 0.3);
+    transform: translateY(-2px);
+}
+
+.entity-item.selected {
+    border-color: #f1c40f;
+    background: rgba(241, 196, 15, 0.1);
+}
+
+.entity-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+}
+
+.entity-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.entity-meta {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.fighter-record {
+    margin-top: 0.5rem;
+}
+
+.record-badge {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    padding: 0.3rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+.empty-state h3 {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.placeholder-content {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+
+/* Loading States */
+.loading-spinner-container {
+    text-align: center;
+    padding: 3rem;
+}
+
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-content {
+    text-align: center;
+    color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .matches-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .match-details-panel {
+        display: none !important;
+    }
+    
+    .fighters-comparison {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .vs-center {
+        order: -1;
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .search-actions-bar {
+        flex-direction: column;
+    }
+    
+    .create-match-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .result-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-primary, .btn-secondary, .btn-danger {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .fighters-display {
+        flex-direction: column;
+    }
+    
+    .vs-divider {
+        order: -1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .fighter-left, .fighter-right {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
