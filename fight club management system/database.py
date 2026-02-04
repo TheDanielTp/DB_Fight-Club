@@ -213,17 +213,47 @@ class Database:
         
         try:
             with conn.cursor() as cur:
+                # Use EXTRACT to get duration as a string instead of interval
                 cur.execute("""
-                    SELECT match_id, start_date, end_date, duration, location
+                    SELECT 
+                        match_id, 
+                        start_date, 
+                        end_date, 
+                        EXTRACT(EPOCH FROM (end_date - start_date)) as duration_seconds,
+                        location
                     FROM match_events
                     ORDER BY match_id DESC
                     LIMIT %s
                 """, (limit,))
-
-                return cur.fetchall()
+                
+                matches = cur.fetchall()
+                
+                # Convert duration from seconds to string format
+                for match in matches:
+                    if match['duration_seconds']:
+                        # Convert seconds to HH:MM:SS format
+                        total_seconds = int(match['duration_seconds'])
+                        hours = total_seconds // 3600
+                        minutes = (total_seconds % 3600) // 60
+                        seconds = total_seconds % 60
+                        match['duration'] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    else:
+                        match['duration'] = None
+                
+                result = []
+                for match in matches:
+                    match_id = match['match_id']
+                    fighter_details = self.get_match_fighters(match_id)
+                    if fighter_details:
+                        match_dict = dict(match)
+                        match_dict.update(fighter_details)
+                        result.append(match_dict)
+                
+                print(f"DEBUG: Fetched {len(result)} matches from database")
+                return result
 
         except Error as e:
-            print(f"Error fetching information:\n{e}")
+            print(f"Error fetching matches:\n{e}")
             return None
         finally:
             conn.close()
@@ -470,30 +500,47 @@ class Database:
         
         try:
             with conn.cursor() as cur:
+                # Get all participants for this match
                 cur.execute("""
                     SELECT 
                         m.match_id,
-                        f1.fighter_id as fighter1_id,
-                        f1.name as fighter1_name,
-                        f1.nickname as fighter1_nickname,
-                        p1.result as fighter1_result,
-                        f2.fighter_id as fighter2_id,
-                        f2.name as fighter2_name,
-                        f2.nickname as fighter2_nickname,
-                        p2.result as fighter2_result
+                        f.fighter_id,
+                        f.name as fighter_name,
+                        f.nickname as fighter_nickname,
+                        f.weight_class as fighter_weight_class,
+                        p.result as fighter_result
                     FROM match_events m
-                    JOIN participants p1 ON m.match_id = p1.match_id
-                    JOIN participants p2 ON m.match_id = p2.match_id
-                    JOIN fighters f1 ON p1.fighter_id = f1.fighter_id
-                    JOIN fighters f2 ON p2.fighter_id = f2.fighter_id
-                    WHERE m.match_id = %s AND p1.fighter_id < p2.fighter_id
-                    LIMIT 1
+                    JOIN participants p ON m.match_id = p.match_id
+                    JOIN fighters f ON p.fighter_id = f.fighter_id
+                    WHERE m.match_id = %s
+                    ORDER BY f.fighter_id
+                    LIMIT 2
                 """, (match_id,))
-
-                return cur.fetchone()
+                
+                participants = cur.fetchall()
+                
+                if not participants or len(participants) < 2:
+                    return None
+                
+                # Structure the result as before
+                result = {
+                    'match_id': match_id,
+                    'fighter1_id': participants[0]['fighter_id'],
+                    'fighter1_name': participants[0]['fighter_name'],
+                    'fighter1_nickname': participants[0]['fighter_nickname'],
+                    'fighter1_weight_class': participants[0]['fighter_weight_class'],
+                    'fighter1_result': participants[0]['fighter_result'],
+                    'fighter2_id': participants[1]['fighter_id'],
+                    'fighter2_name': participants[1]['fighter_name'],
+                    'fighter2_nickname': participants[1]['fighter_nickname'],
+                    'fighter2_weight_class': participants[1]['fighter_weight_class'],
+                    'fighter2_result': participants[1]['fighter_result']
+                }
+                
+                return result
 
         except Error as e:
-            print(f"Error fetching information:\n{e}")
+            print(f"Error fetching match fighters:\n{e}")
             return None
         finally:
             conn.close()
@@ -603,25 +650,50 @@ class Database:
         try:
             with conn.cursor() as cur:
                 search_term = f"%{search_term}%"
+                
+                # Use EXTRACT to get duration as a string instead of interval
                 cur.execute("""
-                    SELECT m.match_id, m.start_date, m.end_date, m.duration, m.location,
-                            f1.name as fighter1_name, f2.name as fighter2_name,
-                            f1.nickname as fighter1_nickname, f2.nickname as fighter2_nickname
+                    SELECT DISTINCT 
+                        m.match_id, 
+                        m.start_date, 
+                        m.end_date, 
+                        EXTRACT(EPOCH FROM (m.end_date - m.start_date)) as duration_seconds,
+                        m.location
                     FROM match_events m
-                    JOIN participants p1 ON p1.match_id = m.match_id
-                    JOIN participants p2 ON p2.match_id = m.match_id
-                    JOIN fighters f1 ON p1.fighter_id = f1.fighter_id
-                    JOIN fighters f2 ON p2.fighter_id = f2.fighter_id
-                    WHERE (f1.name ILIKE %s OR f2.name ILIKE %s
-                            OR f1.nickname ILIKE %s OR f2.nickname ILIKE %s OR m.location ILIKE %s)
-                            AND p1.fighter_id < p2.fighter_id
+                    WHERE m.location ILIKE %s
+                    ORDER BY m.start_date DESC
                     LIMIT %s
-                """, (search_term, search_term, search_term, search_term, search_term, limit))
-
-                return cur.fetchall()
-            
+                """, (search_term, limit))
+                
+                matches = cur.fetchall()
+                
+                # Convert duration from seconds to string format
+                for match in matches:
+                    if match['duration_seconds']:
+                        total_seconds = int(match['duration_seconds'])
+                        hours = total_seconds // 3600
+                        minutes = (total_seconds % 3600) // 60
+                        seconds = total_seconds % 60
+                        match['duration'] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    else:
+                        match['duration'] = None
+                
+                # For each match, get fighter details
+                result = []
+                for match in matches:
+                    match_id = match['match_id']
+                    fighter_details = self.get_match_fighters(match_id)
+                    
+                    if fighter_details:
+                        match_dict = dict(match)
+                        match_dict.update(fighter_details)
+                        result.append(match_dict)
+                
+                print(f"DEBUG: Found {len(result)} matches for search term: {search_term}")
+                return result
+                    
         except Error as e:
-            print(f"Error fetching information:\n{e}")
+            print(f"Error searching matches:\n{e}")
             return None
         finally:
             conn.close()
