@@ -1,73 +1,684 @@
 {% extends "base.html" %}
 
+{% block title %}Login / Sign Up - Fight Club Management System{% endblock %}
+
 {% block content %}
-<div class="login-container {% if request.method == 'POST' %}show-signup{% endif %}" id="loginContainer">
-    <!-- Login Side -->
-    <div class="login-side" style="background: linear-gradient(rgba(26, 26, 26, 0.9), rgba(26, 26, 26, 0.9)), url('{{ url_for('static', filename='images/main_page_logo.png') }}') center/contain no-repeat;">
-        <div class="login-form">
-            <h2 class="login-title">LOGIN</h2>
-            <form method="POST" action="{{ url_for('login') }}">
-                <div class="form-group">
-                    <label class="form-label" for="username">Username</label>
-                    <input type="text" id="username" name="username" class="form-input" required>
+<div class="login-container" id="loginContainer">
+    <!-- Compact Login/Signup Container -->
+    <div class="compact-login-wrapper">
+        <!-- Logo and Title -->
+        <div class="login-header">
+            <h1 class="login-main-title">Welcome Back</h1>
+            <p class="login-subtitle">Access your fight club management dashboard</p>
+        </div>
+        
+        <!-- Main Login/Signup Area -->
+        <div class="login-main-area">
+            <!-- Hover-Activated Split Container -->
+            <div class="split-container">
+                <!-- Left Section - Login -->
+                <div class="split-section login-section" id="loginSection">
+                    <div class="section-content">
+                        <!-- Login Form (Hidden by default) -->
+                        <div class="form-wrapper login-form">
+                            <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+                                <h2 class="form-title">
+                                    <i class="fas fa-sign-in-alt"></i> Login
+                                </h2>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="username">
+                                        <i class="fas fa-user"></i> Username
+                                    </label>
+                                    <input type="text" id="username" name="username" class="form-input" 
+                                           placeholder="Enter username" required autofocus>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="password">
+                                        <i class="fas fa-lock"></i> Password
+                                    </label>
+                                    <input type="password" id="password" name="password" class="form-input" 
+                                           placeholder="Enter password" required>
+                                </div>
+                                
+                                <button type="submit" class="form-button login-btn">
+                                    <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+                                </button>
+                                
+                                <div class="form-hint">
+                                    <p><i class="fas fa-info-circle"></i> Demo: <strong>admin</strong> / <strong>admin123</strong></p>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Login Message (Shown by default) -->
+                        <div class="section-message login-message">
+                            <div class="message-icon">
+                                <i class="fas fa-sign-in-alt"></i>
+                            </div>
+                            <h3 class="message-title">Have an Account?</h3>
+                            <p class="message-text">
+                                Login to access the fight club management dashboard
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-input" required>
+                
+                <!-- Right Section - Signup -->
+                <div class="split-section signup-section" id="signupSection">
+                    <div class="section-content">
+                        <!-- Signup Form (Hidden by default) -->
+                        <div class="form-wrapper signup-form">
+                            <div class="form-disabled-overlay">
+                                <div class="disabled-message">
+                                    <i class="fas fa-user-lock"></i>
+                                    <h3>Admin Access Only</h3>
+                                    <p>New registrations are currently restricted to system administrators</p>
+                                </div>
+                            </div>
+                            
+                            <form id="signupForm" onsubmit="event.preventDefault();">
+                                <h2 class="form-title">
+                                    <i class="fas fa-user-plus"></i> Sign Up
+                                </h2>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="signupUsername">
+                                        <i class="fas fa-user"></i> Username
+                                    </label>
+                                    <input type="text" id="signupUsername" class="form-input" 
+                                           placeholder="Choose username" disabled>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label" for="signupPassword">
+                                        <i class="fas fa-lock"></i> Password
+                                    </label>
+                                    <input type="password" id="signupPassword" class="form-input" 
+                                           placeholder="Create password" disabled>
+                                </div>
+                                
+                                <button type="submit" class="form-button signup-btn" disabled>
+                                    <i class="fas fa-user-plus"></i> Create Account
+                                </button>
+                                
+                                <div class="form-hint">
+                                    <p><i class="fas fa-lock"></i> Contact administrator for access</p>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Signup Message (Shown by default) -->
+                        <div class="section-message signup-message">
+                            <div class="message-icon">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <h3 class="message-title">New User?</h3>
+                            <p class="message-text">
+                                Sign up for administrator access (currently restricted)
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <button type="submit" class="submit-btn">Login</button>
-            </form>
-            <div class="switch-text" onclick="switchSide()">
-                Don't have an account? Contact system administrator.
             </div>
         </div>
-    </div>
-    
-    <!-- Signup Side (Information Only) -->
-    <div class="login-side" style="background: linear-gradient(rgba(90, 0, 0, 0.9), rgba(90, 0, 0, 0.9)), url('{{ url_for('static', filename='images/main_page_logo.png') }}') center/contain no-repeat;">
-        <div class="login-form">
-            <h2 class="login-title">ADMIN ACCESS ONLY</h2>
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <p style="color: var(--paper); margin-bottom: 1rem;">
-                    This system is for authorized personnel only.
-                </p>
-                <p style="color: var(--ash-gray); font-size: 0.9rem;">
-                    Contact the system administrator for access credentials.
-                </p>
-            </div>
-            <div class="switch-text" onclick="switchSide()">
-                Already have an account? Login.
-            </div>
+        
+        <!-- Back to Home -->
+        <div class="back-home">
+            <a href="{{ url_for('index') }}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Return to Main Page
+            </a>
         </div>
     </div>
 </div>
 
-<style>
-.login-container {
-    transition: transform 0.6s ease-in-out;
-}
-
-.login-container.show-signup .login-side:first-child {
-    transform: translateX(-5%);
-}
-
-.login-container.show-signup .login-side:last-child {
-    transform: translateX(-5%);
-}
-
-.login-side {
-    transition: transform 0.6s ease-in-out;
-}
-
-.login-container:not(.show-signup) .login-side:last-child {
-    transform: translateX(5%);
-}
-</style>
-
 <script>
-function switchSide() {
-    const container = document.getElementById('loginContainer');
-    container.classList.toggle('show-signup');
+document.addEventListener('DOMContentLoaded', function() {
+    const loginSection = document.getElementById('loginSection');
+    const signupSection = document.getElementById('signupSection');
+    
+    // Set initial state (show messages, hide forms)
+    resetSections();
+    
+    // Add hover listeners
+    loginSection.addEventListener('mouseenter', () => {
+        showLoginForm();
+    });
+    
+    loginSection.addEventListener('mouseleave', () => {
+        resetSections();
+    });
+    
+    signupSection.addEventListener('mouseenter', () => {
+        showSignupForm();
+    });
+    
+    signupSection.addEventListener('mouseleave', () => {
+        resetSections();
+    });
+    
+    // Touch support for mobile
+    loginSection.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        showLoginForm();
+    });
+    
+    signupSection.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        showSignupForm();
+    });
+    
+    // Close on touch outside
+    document.addEventListener('touchstart', (e) => {
+        if (!loginSection.contains(e.target) && !signupSection.contains(e.target)) {
+            resetSections();
+        }
+    });
+    
+    // Form submission
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const submitButton = this.querySelector('.form-button');
+        const originalText = submitButton.innerHTML;
+        
+        // Show loading state
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+        submitButton.disabled = true;
+        
+        try {
+            const response = await fetch('{{ url_for("login") }}', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                submitButton.innerHTML = '<i class="fas fa-check"></i> Success!';
+                submitButton.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                const result = await response.json();
+                showFlashMessage(result.error || 'Login failed. Please check credentials.', 'error');
+                
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                
+                // Shake animation
+                this.classList.add('shake');
+                setTimeout(() => this.classList.remove('shake'), 500);
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showFlashMessage('Network error. Please try again.', 'error');
+            
+            submitButton.innerHTML = originalText;
+            submitButton.disabled = false;
+        }
+    });
+});
+
+function showLoginForm() {
+    const loginSection = document.getElementById('loginSection');
+    const signupSection = document.getElementById('signupSection');
+    
+    // Show login form, hide login message
+    loginSection.querySelector('.login-form').style.opacity = '1';
+    loginSection.querySelector('.login-form').style.transform = 'translateY(0)';
+    loginSection.querySelector('.login-message').style.opacity = '0';
+    loginSection.querySelector('.login-message').style.transform = 'translateY(-20px)';
+    
+    // Show signup message, hide signup form
+    signupSection.querySelector('.signup-form').style.opacity = '0';
+    signupSection.querySelector('.signup-form').style.transform = 'translateY(20px)';
+    signupSection.querySelector('.signup-message').style.opacity = '1';
+    signupSection.querySelector('.signup-message').style.transform = 'translateY(0)';
+    
+    // Visual feedback
+    loginSection.classList.add('active');
+    signupSection.classList.remove('active');
+}
+
+function showSignupForm() {
+    const loginSection = document.getElementById('loginSection');
+    const signupSection = document.getElementById('signupSection');
+    
+    // Show signup form, hide signup message
+    signupSection.querySelector('.signup-form').style.opacity = '1';
+    signupSection.querySelector('.signup-form').style.transform = 'translateY(0)';
+    signupSection.querySelector('.signup-message').style.opacity = '0';
+    signupSection.querySelector('.signup-message').style.transform = 'translateY(-20px)';
+    
+    // Show login message, hide login form
+    loginSection.querySelector('.login-form').style.opacity = '0';
+    loginSection.querySelector('.login-form').style.transform = 'translateY(20px)';
+    loginSection.querySelector('.login-message').style.opacity = '1';
+    loginSection.querySelector('.login-message').style.transform = 'translateY(0)';
+    
+    // Visual feedback
+    signupSection.classList.add('active');
+    loginSection.classList.remove('active');
+}
+
+function resetSections() {
+    const loginSection = document.getElementById('loginSection');
+    const signupSection = document.getElementById('signupSection');
+    
+    // Reset both sections to show messages
+    loginSection.querySelector('.login-form').style.opacity = '0';
+    loginSection.querySelector('.login-form').style.transform = 'translateY(20px)';
+    loginSection.querySelector('.login-message').style.opacity = '1';
+    loginSection.querySelector('.login-message').style.transform = 'translateY(0)';
+    
+    signupSection.querySelector('.signup-form').style.opacity = '0';
+    signupSection.querySelector('.signup-form').style.transform = 'translateY(20px)';
+    signupSection.querySelector('.signup-message').style.opacity = '1';
+    signupSection.querySelector('.signup-message').style.transform = 'translateY(0)';
+    
+    // Remove active classes
+    loginSection.classList.remove('active');
+    signupSection.classList.remove('active');
 }
 </script>
+
+<style>
+/* Compact Login Styles */
+.login-container {
+    min-height: 110vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px 40px;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+}
+
+.compact-login-wrapper {
+    max-width: 900px;
+    width: 100%;
+    background: rgba(26, 26, 26, 0.9);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(231, 74, 143, 0.2);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-main-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.2rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    background: linear-gradient(90deg, #e74a8f, #efa9c6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.login-subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+
+/* Split Container */
+.split-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    min-height: 500px;
+}
+
+@media (max-width: 768px) {
+    .split-container {
+        flex-direction: column;
+        min-height: auto;
+    }
+}
+
+.split-section {
+    flex: 1;
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 2px solid transparent;
+    transition: all 0.4s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.split-section:hover,
+.split-section.active {
+    border-color: rgba(231, 74, 143, 0.4);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(231, 74, 143, 0.2);
+}
+
+.login-section {
+    border-image: linear-gradient(135deg, #e74a8f, transparent) 1;
+}
+
+.signup-section {
+    border-image: linear-gradient(135deg, #efa9c6, transparent) 1;
+}
+
+.section-content {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Forms and Messages */
+.form-wrapper,
+.section-message {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1rem;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Form Styles */
+.form-wrapper {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+}
+
+.section-message {
+    opacity: 1;
+    transform: translateY(0);
+    text-align: center;
+}
+
+.split-section:hover .form-wrapper,
+.split-section.active .form-wrapper {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+.split-section:hover .section-message,
+.split-section.active .section-message {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.form-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: rgba(26, 26, 26, 0.8);
+    border: 1px solid rgba(231, 74, 143, 0.3);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #e74a8f;
+    box-shadow: 0 0 0 2px rgba(231, 74, 143, 0.2);
+}
+
+.form-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.form-button {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, #e74a8f, #c42a7a);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.form-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(231, 74, 143, 0.4);
+}
+
+.form-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.login-btn {
+    background: linear-gradient(135deg, #e74a8f, #c42a7a);
+}
+
+.signup-btn {
+    background: linear-gradient(135deg, #666, #444);
+}
+
+.form-hint {
+    margin-top: 1rem;
+    padding: 0.8rem;
+    background: rgba(231, 74, 143, 0.1);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* Message Styles */
+.message-icon {
+    font-size: 3rem;
+    color: #e74a8f;
+    margin-bottom: 1rem;
+    animation: pulse 2s infinite;
+}
+
+.message-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.message-text {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Disabled Signup Overlay */
+.form-disabled-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 10, 0.9);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    z-index: 10;
+}
+
+.disabled-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.disabled-message i {
+    font-size: 3rem;
+    color: #efa9c6;
+    margin-bottom: 1rem;
+}
+
+.disabled-message h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.disabled-message p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Instructions */
+.login-instructions {
+    background: rgba(10, 10, 10, 0.7);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(231, 74, 143, 0.2);
+}
+
+.login-instructions p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.demo-credentials {
+    background: rgba(231, 74, 143, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.demo-credentials h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.demo-credentials p {
+    margin: 0.3rem 0;
+    font-family: monospace;
+    color: #efa9c6;
+}
+
+.demo-credentials code {
+    background: rgba(231, 74, 143, 0.2);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+/* Back to Home */
+.back-home {
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.back-link {
+    color: #efa9c6;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.back-link:hover {
+    color: #e74a8f;
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .compact-login-wrapper {
+        padding: 1.5rem;
+    }
+    
+    .login-main-title {
+        font-size: 1.8rem;
+    }
+    
+    .split-section {
+        padding: 1rem;
+    }
+    
+    .message-icon {
+        font-size: 2.5rem;
+    }
+    
+    .form-title {
+        font-size: 1.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .compact-login-wrapper {
+        padding: 1rem;
+    }
+    
+    .login-main-title {
+        font-size: 1.5rem;
+    }
+    
+    .split-container {
+        gap: 0.8rem;
+    }
+    
+    .split-section {
+        padding: 0.8rem;
+    }
+}
+</style>
 {% endblock %}
