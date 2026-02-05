@@ -444,12 +444,9 @@ async function selectMatch(matchId) {
     showLoading();
     try {
         const response = await fetch(`/api/matches/${matchId}`);
-        console.log(`DEBUG: Fetch response status: ${response.status}`);
-        console.log(`DEBUG: Fetch response ok: ${response.ok}`);
         
         if (response.ok) {
             const match = await response.json();
-            console.log(`DEBUG: Match data received:`, match);
             currentMatchId = matchId;
             currentFighter1Id = match.fighter1_id;
             currentFighter2Id = match.fighter2_id;
@@ -459,7 +456,6 @@ async function selectMatch(matchId) {
             document.getElementById('matchDetailsPanel').style.display = 'flex';
         } else {
             const error = await response.json();
-            console.log(`DEBUG: Error response:`, error);
             throw new Error(error.error || 'Failed to load match details');
         }
     } catch (error) {
