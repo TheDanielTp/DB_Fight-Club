@@ -1,3 +1,8 @@
 pyTelegramBotAPI
+python-dotenv
 psycopg2-binary
 unidecode
+Flask
+Flask-SQLAlchemy
+Flask-Login
+werkzeug
