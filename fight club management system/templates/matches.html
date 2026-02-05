@@ -949,8 +949,8 @@ async function confirmFighterReplacement() {
     
     showLoading();
     try {
-        const response = await fetch('/api/match/update_fighter', {
-            method: 'POST',
+        const response = await fetch(`/api/matches/${currentMatchId}/fighters`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -1135,8 +1135,8 @@ async function saveMatchResult() {
     
     showLoading();
     try {
-        const response = await fetch('/api/match/update_result', {
-            method: 'POST',
+        const response = await fetch(`/api/matches/${currentMatchId}/result`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
