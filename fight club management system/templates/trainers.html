@@ -231,6 +231,8 @@ let addFightersData = [];
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     loadTrainers();
+
+    document.getElementById('trainerForm').addEventListener('submit', saveTrainer);
 });
 
 // Load all trainers
