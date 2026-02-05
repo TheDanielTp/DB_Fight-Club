@@ -1,378 +1,357 @@
+// Modern Fight Club Management System JavaScript
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Modal functionality
-    const modals = document.querySelectorAll('.modal');
-    const closeButtons = document.querySelectorAll('.close-btn');
+    // Initialize components
+    initNavbar();
+    initAnimations();
+    initParticles();
+    initPageTransitions();
+    initCounters();
+    initFlashMessages();
     
-    closeButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
-        });
-    });
-    
-    window.addEventListener('click', function(event) {
-        modals.forEach(modal => {
-            if (event.target === modal) {
-                modal.style.display = 'none';
+    // Handle entity button clicks
+    document.querySelectorAll('.entity-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (!window.isLoggedIn) {
+                e.preventDefault();
+                const entity = this.dataset.entity;
+                showLoginMessage(entity);
             }
         });
     });
     
-    // Item card click handlers
-    document.querySelectorAll('.item-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const entityType = this.dataset.entityType;
-            const entityId = this.dataset.entityId;
-            loadEntityDetails(entityType, entityId);
-        });
-    });
-    
-    // Search form submission
-    const searchForms = document.querySelectorAll('form[role="search"]');
-    searchForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const searchInput = this.querySelector('input[type="search"]');
-            const searchTerm = searchInput.value;
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('search', searchTerm);
-            currentUrl.searchParams.set('page', '1');
-            window.location.href = currentUrl.toString();
-        });
-    });
-    
-    // Login/Signup form switching
-    const loginContainer = document.querySelector('.login-container');
-    if (loginContainer) {
-        const switchTexts = document.querySelectorAll('.switch-text');
-        switchTexts.forEach(text => {
-            text.addEventListener('click', function() {
-                loginContainer.classList.toggle('show-signup');
-            });
+    // Login button click
+    const loginBtn = document.querySelector('.login-btn');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function(e) {
+            if (!window.isLoggedIn) {
+                e.preventDefault();
+                window.location.href = '/login';
+            }
         });
     }
-    
-    // Form validation
-    const forms = document.querySelectorAll('form:not([role="search"])');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            const requiredInputs = this.querySelectorAll('[required]');
-            let isValid = true;
-            
-            requiredInputs.forEach(input => {
-                if (!input.value.trim()) {
-                    isValid = false;
-                    input.style.borderColor = '#f44336';
-                    showFlashMessage('Please fill in all required fields', 'error');
-                } else {
-                    input.style.borderColor = '';
-                }
-            });
-            
-            if (!isValid) {
-                e.preventDefault();
-            }
-        });
-    });
-    
-    // Initialize tooltips
-    initTooltips();
-    
-    // Auto-hide flash messages
-    autoHideFlashMessages();
 });
 
-function loadEntityDetails(entityType, entityId) {
-    const modal = document.getElementById('viewModal');
-    const modalContent = modal.querySelector('.modal-content');
+// Initialize navbar effects
+function initNavbar() {
+    const navbar = document.querySelector('.navbar');
+    let lastScroll = 0;
     
-    modalContent.innerHTML = `
-        <div class="loading"></div>
-    `;
-    modal.style.display = 'block';
-    
-    fetch(`/view/${entityType}/${entityId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(html => {
-            modalContent.innerHTML = html;
-            attachModalEventListeners();
-        })
-        .catch(error => {
-            console.error('Error loading entity details:', error);
-            modalContent.innerHTML = `
-                <span class="close-btn">&times;</span>
-                <div class="error-message">
-                    <h2>Error</h2>
-                    <p>Failed to load details. Please try again.</p>
-                </div>
-            `;
-        });
-}
-
-function attachModalEventListeners() {
-    // Re-attach close button listener
-    const closeBtn = document.querySelector('.close-btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
-        });
-    }
-    
-    // Attach edit form submission handlers
-    const editForms = document.querySelectorAll('.edit-form');
-    editForms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            submitEditForm(this);
-        });
-    });
-    
-    // Attach delete button handlers
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    deleteButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const entityType = this.dataset.entityType;
-            const entityId = this.dataset.entityId;
-            confirmDelete(entityType, entityId);
-        });
-    });
-    
-    // Attach relationship action buttons
-    const actionButtons = document.querySelectorAll('.action-btn[data-action]');
-    actionButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const action = this.dataset.action;
-            const entityId = this.dataset.entityId;
-            const targetId = this.dataset.targetId;
-            performAction(action, entityId, targetId);
-        });
-    });
-}
-
-function submitEditForm(form) {
-    const formData = new FormData(form);
-    const entityType = form.dataset.entityType;
-    const entityId = form.dataset.entityId;
-    
-    fetch(`/api/update/${entityType}/${entityId}`, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showFlashMessage('Update successful!', 'success');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } else {
-            showFlashMessage(data.error || 'Update failed', 'error');
+    window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        
+        if (currentScroll <= 0) {
+            navbar.style.transform = 'translateY(0)';
+            return;
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showFlashMessage('An error occurred', 'error');
+        
+        if (currentScroll > lastScroll && currentScroll > 100) {
+            // Scroll down
+            navbar.style.transform = 'translateY(-100%)';
+        } else {
+            // Scroll up
+            navbar.style.transform = 'translateY(0)';
+        }
+        
+        lastScroll = currentScroll;
     });
 }
 
-function confirmDelete(entityType, entityId) {
-    if (confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
-        fetch(`/api/delete/${entityType}/${entityId}`, {
-            method: 'POST'
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showFlashMessage('Deleted successfully!', 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                showFlashMessage(data.error || 'Delete failed', 'error');
+// Initialize animations
+function initAnimations() {
+    // Intersection Observer for scroll animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-in');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showFlashMessage('An error occurred', 'error');
         });
+    }, observerOptions);
+    
+    // Observe elements
+    document.querySelectorAll('.stat-card, .feature-card').forEach(el => {
+        observer.observe(el);
+    });
+    
+    // Add animation classes
+    const style = document.createElement('style');
+    style.textContent = `
+        .stat-card, .feature-card {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        
+        .stat-card.animate-in, .feature-card.animate-in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .stat-card:nth-child(1) { transition-delay: 0.1s; }
+        .stat-card:nth-child(2) { transition-delay: 0.2s; }
+        .stat-card:nth-child(3) { transition-delay: 0.3s; }
+        .stat-card:nth-child(4) { transition-delay: 0.4s; }
+        
+        .feature-card:nth-child(1) { transition-delay: 0.1s; }
+        .feature-card:nth-child(2) { transition-delay: 0.2s; }
+        .feature-card:nth-child(3) { transition-delay: 0.3s; }
+        .feature-card:nth-child(4) { transition-delay: 0.4s; }
+    `;
+    document.head.appendChild(style);
+}
+
+// Initialize particle background
+function initParticles() {
+    const container = document.querySelector('.particles');
+    if (!container) return;
+    
+    const particleCount = 50;
+    
+    for (let i = 0; i < particleCount; i++) {
+        createParticle(container);
     }
 }
 
-function performAction(action, entityId, targetId) {
-    let url = '';
-    const formData = new FormData();
+function createParticle(container) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
     
-    switch(action) {
-        case 'add_trainer_to_fighter':
-            url = '/api/fighter/add_trainer';
-            formData.append('fighter_id', entityId);
-            formData.append('trainer_id', targetId);
-            break;
-        case 'remove_trainer_from_fighter':
-            url = '/api/fighter/remove_trainer';
-            formData.append('fighter_id', entityId);
-            formData.append('trainer_id', targetId);
-            break;
-        case 'add_fighter_to_gym':
-            url = '/api/gym/add_fighter';
-            formData.append('gym_id', entityId);
-            formData.append('fighter_id', targetId);
-            break;
-        case 'add_trainer_to_gym':
-            url = '/api/gym/add_trainer';
-            formData.append('gym_id', entityId);
-            formData.append('trainer_id', targetId);
-            break;
-        case 'remove_fighter_from_gym':
-            url = '/api/gym/remove_fighter';
-            formData.append('fighter_id', targetId);
-            break;
-        case 'remove_trainer_from_gym':
-            url = '/api/gym/remove_trainer';
-            formData.append('trainer_id', targetId);
-            break;
-        case 'add_fighter_to_trainer':
-            url = '/api/trainer/add_fighter';
-            formData.append('trainer_id', entityId);
-            formData.append('fighter_id', targetId);
-            break;
-        case 'remove_fighter_from_trainer':
-            url = '/api/trainer/remove_fighter';
-            formData.append('trainer_id', entityId);
-            formData.append('fighter_id', targetId);
-            break;
-        case 'change_fighter_gym':
-            url = `/api/update/fighter/${entityId}`;
-            formData.append('field', 'gym_id');
-            formData.append('value', targetId);
-            break;
-        case 'change_trainer_gym':
-            url = `/api/update/trainer/${entityId}`;
-            formData.append('field', 'gym_id');
-            formData.append('value', targetId);
-            break;
-    }
+    // Random properties
+    const size = Math.random() * 5 + 2;
+    const posX = Math.random() * 100;
+    const posY = Math.random() * 100;
+    const delay = Math.random() * 5;
+    const duration = Math.random() * 10 + 10;
+    const opacity = Math.random() * 0.3 + 0.1;
     
-    if (url) {
-        fetch(url, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showFlashMessage('Action successful!', 'success');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            } else {
-                showFlashMessage(data.error || 'Action failed', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showFlashMessage('An error occurred', 'error');
-        });
-    }
+    // Apply styles
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+    particle.style.left = `${posX}%`;
+    particle.style.top = `${posY}%`;
+    particle.style.opacity = opacity;
+    particle.style.animationDelay = `${delay}s`;
+    particle.style.animationDuration = `${duration}s`;
+    
+    // Random color gradient
+    const colors = ['#e74a8f', '#efa9c6', '#c42a7a'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    particle.style.background = color;
+    
+    container.appendChild(particle);
+    
+    // Remove and recreate particle after animation
+    setTimeout(() => {
+        particle.remove();
+        createParticle(container);
+    }, duration * 1000);
 }
 
-function showFlashMessage(message, type = 'info') {
+// Initialize page transitions
+function initPageTransitions() {
+    const transition = document.createElement('div');
+    transition.className = 'page-transition';
+    transition.innerHTML = `
+        <div class="loading-spinner"></div>
+    `;
+    document.body.appendChild(transition);
+    
+    // Handle link clicks
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (link && link.href && link.href.startsWith(window.location.origin)) {
+            e.preventDefault();
+            
+            transition.classList.add('active');
+            
+            setTimeout(() => {
+                window.location.href = link.href;
+            }, 300);
+        }
+    });
+}
+
+// Initialize counter animations
+function initCounters() {
+    const counters = document.querySelectorAll('.stat-number');
+    const speed = 200;
+    
+    counters.forEach(counter => {
+        const updateCount = () => {
+            const target = parseInt(counter.getAttribute('data-count') || counter.textContent);
+            const count = parseInt(counter.textContent.replace(/\D/g, ''));
+            const increment = target / speed;
+            
+            if (count < target) {
+                counter.textContent = Math.ceil(count + increment).toLocaleString();
+                setTimeout(updateCount, 1);
+            } else {
+                counter.textContent = target.toLocaleString();
+            }
+        };
+        
+        // Start counting when element is in view
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    updateCount();
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        observer.observe(counter);
+    });
+}
+
+// Initialize flash messages
+function initFlashMessages() {
+    const messages = document.querySelectorAll('.flash-message');
+    
+    messages.forEach(message => {
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            message.style.opacity = '0';
+            message.style.transform = 'translateX(100%)';
+            
+            setTimeout(() => {
+                message.remove();
+            }, 300);
+        }, 5000);
+        
+        // Close button functionality
+        const closeBtn = message.querySelector('.close-flash');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                message.style.opacity = '0';
+                message.style.transform = 'translateX(100%)';
+                
+                setTimeout(() => {
+                    message.remove();
+                }, 300);
+            });
+        }
+    });
+}
+
+// Show login required message
+function showLoginMessage(entity) {
+    // Create flash message
     const flashContainer = document.querySelector('.flash-messages');
     if (!flashContainer) {
-        const newContainer = document.createElement('div');
-        newContainer.className = 'flash-messages';
-        document.body.appendChild(newContainer);
+        const container = document.createElement('div');
+        container.className = 'flash-messages';
+        document.body.appendChild(container);
     }
     
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `flash-message ${type}`;
-    messageDiv.textContent = message;
+    const message = document.createElement('div');
+    message.className = 'flash-message warning';
+    message.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Please login first to access ${entity} management.</span>
+        <button class="close-flash" style="margin-left: auto; background: none; border: none; color: white; cursor: pointer;">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
     
-    document.querySelector('.flash-messages').appendChild(messageDiv);
+    flashContainer.appendChild(message);
     
+    // Add close functionality
+    message.querySelector('.close-flash').addEventListener('click', () => {
+        message.style.opacity = '0';
+        message.style.transform = 'translateX(100%)';
+        
+        setTimeout(() => {
+            message.remove();
+        }, 300);
+    });
+    
+    // Auto-remove after 5 seconds
     setTimeout(() => {
-        messageDiv.remove();
+        if (message.parentNode) {
+            message.style.opacity = '0';
+            message.style.transform = 'translateX(100%)';
+            
+            setTimeout(() => {
+                message.remove();
+            }, 300);
+        }
     }, 5000);
 }
 
-function initTooltips() {
-    const tooltipElements = document.querySelectorAll('[data-tooltip]');
-    tooltipElements.forEach(element => {
-        element.addEventListener('mouseenter', function() {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.textContent = this.dataset.tooltip;
-            tooltip.style.position = 'absolute';
-            tooltip.style.background = 'var(--dark-red)';
-            tooltip.style.color = 'var(--paper)';
-            tooltip.style.padding = '0.5rem';
-            tooltip.style.borderRadius = '4px';
-            tooltip.style.zIndex = '10000';
-            
-            const rect = this.getBoundingClientRect();
-            tooltip.style.top = (rect.top - 40) + 'px';
-            tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-            tooltip.style.transform = 'translateX(-50%)';
-            
-            document.body.appendChild(tooltip);
-            
-            this.tooltipElement = tooltip;
-        });
-        
-        element.addEventListener('mouseleave', function() {
-            if (this.tooltipElement) {
-                this.tooltipElement.remove();
+// API functions
+async function fetchStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        return null;
+    }
+}
+
+// Update stats on page load
+window.addEventListener('load', async () => {
+    const stats = await fetchStats();
+    if (stats) {
+        // Update counter elements with real data
+        document.querySelectorAll('[data-stat]').forEach(el => {
+            const stat = el.getAttribute('data-stat');
+            if (stats[stat]) {
+                el.setAttribute('data-count', stats[stat]);
+                if (el.textContent === '∞') {
+                    el.textContent = '0';
+                }
             }
         });
-    });
-}
+        
+        // Restart counters
+        initCounters();
+    }
+});
 
-function autoHideFlashMessages() {
-    const flashMessages = document.querySelectorAll('.flash-message');
-    flashMessages.forEach(message => {
-        setTimeout(() => {
-            message.style.opacity = '0';
-            message.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => message.remove(), 500);
-        }, 3000);
-    });
-}
-
-// Utility function for making API calls
-async function apiCall(endpoint, method = 'GET', data = null) {
-    const options = {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    };
+// Utility function for smooth scrolling
+function smoothScroll(target, duration = 1000) {
+    const targetElement = document.querySelector(target);
+    if (!targetElement) return;
     
-    if (data && (method === 'POST' || method === 'PUT')) {
-        options.body = JSON.stringify(data);
+    const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+    const startPosition = window.pageYOffset;
+    const distance = targetPosition - startPosition;
+    let startTime = null;
+    
+    function animation(currentTime) {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+        const run = ease(timeElapsed, startPosition, distance, duration);
+        window.scrollTo(0, run);
+        if (timeElapsed < duration) requestAnimationFrame(animation);
     }
     
-    try {
-        const response = await fetch(endpoint, options);
-        return await response.json();
-    } catch (error) {
-        console.error('API call failed:', error);
-        throw error;
+    function ease(t, b, c, d) {
+        t /= d / 2;
+        if (t < 1) return c / 2 * t * t + b;
+        t--;
+        return -c / 2 * (t * (t - 2) - 1) + b;
     }
+    
+    requestAnimationFrame(animation);
 }
 
-// Debounce function for search inputs
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+// Add smooth scroll to anchor links
+document.addEventListener('click', function(e) {
+    if (e.target.matches('a[href^="#"]')) {
+        e.preventDefault();
+        const target = e.target.getAttribute('href');
+        smoothScroll(target);
+    }
+});
+
+// Global variables
+window.isLoggedIn = false; // Will be set by backend template
