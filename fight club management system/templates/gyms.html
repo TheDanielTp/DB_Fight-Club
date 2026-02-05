@@ -296,7 +296,7 @@ async function loadGyms() {
 }
 
 // Display gyms in the list
-function displayGyms(gyms) {
+async function displayGyms(gyms) {
     const gymsList = document.getElementById('gymsList');
     
     if (gyms.length === 0) {
@@ -310,7 +310,46 @@ function displayGyms(gyms) {
         return;
     }
     
-    gymsList.innerHTML = gyms.map(gym => `
+    // Pre-load all fighter and trainer counts in parallel
+    const gymsWithCounts = await Promise.all(
+        gyms.map(async (gym) => {
+            try {
+                // Fetch both fighters and trainers for this gym in parallel
+                const [fightersResponse, trainersResponse] = await Promise.all([
+                    fetch(`/api/gyms/${gym.gym_id}/fighters`),
+                    fetch(`/api/gyms/${gym.gym_id}/trainers`)
+                ]);
+                
+                let fighterCount = 0;
+                let trainerCount = 0;
+                
+                if (fightersResponse.ok) {
+                    const fighters = await fightersResponse.json();
+                    fighterCount = fighters.length;
+                }
+                
+                if (trainersResponse.ok) {
+                    const trainers = await trainersResponse.json();
+                    trainerCount = trainers.length;
+                }
+                
+                return { 
+                    ...gym, 
+                    fighterCount, 
+                    trainerCount  // This will override any existing trainer_count
+                };
+            } catch (error) {
+                console.error('Error loading data for gym:', gym.gym_id, error);
+                return { 
+                    ...gym, 
+                    fighterCount: 0, 
+                    trainerCount: 0 
+                };
+            }
+        })
+    );
+
+    gymsList.innerHTML = gymsWithCounts.map(gym => `
         <div class="gym-card" data-id="${gym.gym_id}" onclick="selectGym(${gym.gym_id})">
             <div class="gym-card-header">
                 <div class="gym-name">
@@ -335,11 +374,11 @@ function displayGyms(gyms) {
                 
                 <div class="gym-stats">
                     <div class="stat-item">
-                        <span class="stat-count">${gym.fighter_count || 0}</span>
+                        <span class="stat-count">${gym.fighterCount}</span>
                         <span class="stat-label">Fighters</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-count">${gym.trainer_count || 0}</span>
+                        <span class="stat-count">${gym.trainerCount}</span>
                         <span class="stat-label">Trainers</span>
                     </div>
                 </div>
@@ -406,7 +445,7 @@ async function displayGymDetails(gym) {
         <!-- Basic Info Section -->
         <div class="info-section">
             <h3 class="section-title">
-                <i class="fas fa-dumbbell"></i> Gym Information
+                Gym Information
                 <button class="edit-btn" onclick="editGym()">
                     <i class="fas fa-edit"></i> Edit
                 </button>
@@ -437,7 +476,7 @@ async function displayGymDetails(gym) {
         <!-- Stats Section -->
         <div class="info-section">
             <h3 class="section-title">
-                <i class="fas fa-chart-bar"></i> Gym Statistics
+                Gym Statistics
             </h3>
             
             <div class="stats-display">
@@ -470,7 +509,7 @@ async function displayGymDetails(gym) {
         <!-- Fighters Section -->
         <div class="info-section">
             <h3 class="section-title">
-                <i class="fas fa-fist-raised"></i> Gym Fighters
+                Gym Fighters
                 <div class="action-buttons">
                     <button class="add-btn" onclick="showAddFighterToGymModal()">
                         <i class="fas fa-plus"></i> Add Fighter
@@ -512,7 +551,7 @@ async function displayGymDetails(gym) {
         <!-- Trainers Section -->
         <div class="info-section">
             <h3 class="section-title">
-                <i class="fas fa-user-tie"></i> Gym Trainers
+                Gym Trainers
                 <div class="action-buttons">
                     <button class="add-btn" onclick="showAddTrainerToGymModal()">
                         <i class="fas fa-plus"></i> Add Trainer
@@ -548,7 +587,7 @@ async function displayGymDetails(gym) {
         <!-- Danger Zone -->
         <div class="info-section danger-zone">
             <h3 class="section-title">
-                <i class="fas fa-exclamation-triangle"></i> Danger Zone
+                Danger Zone
             </h3>
             
             <div class="danger-actions">
