@@ -186,7 +186,25 @@ body {
     box-shadow: 0 4px 15px rgba(231, 74, 143, 0.3);
 }
 
+.nav-link.logout-btn {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(231, 74, 143, 0.3);
+}
+
 .nav-link.login-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(231, 74, 143, 0.4);
+    background: linear-gradient(135deg, #c42a7a 0%, #e74a8f 100%);
+}
+
+.nav-link.logout-btn:hover {
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 6px 20px rgba(231, 74, 143, 0.4);
     background: linear-gradient(135deg, #c42a7a 0%, #e74a8f 100%);
