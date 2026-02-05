@@ -865,12 +865,12 @@ async function addFighter() {
     
     showLoading();
     try {
-        const response = await fetch(`/api/trainers/${currentTrainerId}/fighters`, {
+        const response = await fetch(`/api/fighters/${fighterId}/trainers`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ fighter_id: parseInt(fighterId) })
+            body: JSON.stringify({ trainer_id: parseInt(currentTrainerId) })
         });
         
         if (response.ok) {
