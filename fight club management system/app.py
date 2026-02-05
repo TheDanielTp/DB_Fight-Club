@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from database import Database
+import traceback
 
 load_dotenv()
 
@@ -322,6 +323,31 @@ def update_fighter_gym(fighter_id):
         return jsonify({'error': str(e)}), 500
     
 # Add these trainer API routes to app.py
+
+@app.route('/api/trainers', methods=['POST'])
+@require_login
+def create_trainer():
+    """Create a new trainer (JSON API)"""
+    try:
+        data = request.get_json()
+        
+        required_fields = ['name', 'specialty']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'{field} is required'}), 400
+        
+        trainer_id = db.create_trainer(
+            name=data['name'],
+            specialty=data['specialty'],
+            gym_id=data.get('gym_id')
+        )
+        
+        if trainer_id:
+            return jsonify({'id': trainer_id, 'message': 'Trainer created successfully'})
+        else:
+            return jsonify({'error': 'Failed to create trainer'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/trainers/<int:trainer_id>', methods=['GET'])
 def get_trainer_details(trainer_id):
@@ -734,20 +760,14 @@ def remove_fighter_trainer(fighter_id, trainer_id):
 def get_matches():
     """Get all matches"""
     try:
-        print("DEBUG: Fetching matches...")  # Debug line
         search_term = request.args.get('search', '')
         
         if search_term:
-            print(f"DEBUG: Searching matches with term: {search_term}")  # Debug line
             matches = db.search_matches(search_term, limit=100)
         else:
-            print("DEBUG: Getting all matches")  # Debug line
             matches = db.get_all_matches(limit=100)
-        
-        print(f"DEBUG: Matches result: {matches}")  # Debug line
-        
+                
         if matches is None:
-            print("DEBUG: matches is None")  # Debug line
             return jsonify([])
         
         # Convert to list of dicts
@@ -763,13 +783,10 @@ def get_matches():
             
             matches_list.append(match_dict)
         
-        print(f"DEBUG: Returning {len(matches_list)} matches")  # Debug line
         return jsonify(matches_list)
         
     except Exception as e:
-        print(f"DEBUG: Error in get_matches: {str(e)}")  # Debug line
-        import traceback
-        traceback.print_exc()  # This will print the full traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/debug/matches')
@@ -1450,6 +1467,8 @@ def remove_fighter_from_trainer():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+# =================== UPDATE MATCH FIGHTERS ===================
+
 @app.route('/api/match/update_fighter', methods=['POST'])
 def update_match_fighter():
     if 'user_id' not in session:
@@ -1470,6 +1489,8 @@ def update_match_fighter():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+# ==================== UPDATE MATCH RESULT ====================
+
 @app.route('/api/match/update_result', methods=['POST'])
 def update_match_result():
     if 'user_id' not in session:
@@ -1488,182 +1509,6 @@ def update_match_result():
             
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-
-@app.route('/modal/delete_confirmation')
-def get_delete_confirmation():
-    entity_type = request.args.get('entity_type')
-    entity_id = request.args.get('entity_id')
-    entity_name = request.args.get('entity_name', '')
-    return render_template('modals/delete_confirmation.html',
-                         entity_type=entity_type,
-                         entity_id=entity_id,
-                         entity_name=entity_name)
-
-@app.route('/modal/search')
-def get_search_modal():
-    action = request.args.get('action', 'update')
-    entity_type = request.args.get('entity_type')
-    return render_template('modals/search_modal.html',
-                         action=action,
-                         entity_type=entity_type)
-
-@app.route('/modal/add/<entity_type>')
-def get_add_modal(entity_type):
-    if entity_type == 'fighter':
-        gyms = db.get_all_gyms()
-        return render_template('modals/add_fighter.html', gyms=gyms)
-    elif entity_type == 'gym':
-        return render_template('modals/add_gym.html')
-    elif entity_type == 'trainer':
-        gyms = db.get_all_gyms()
-        return render_template('modals/add_trainer.html', gyms=gyms)
-    elif entity_type == 'match':
-        fighters = db.get_all_fighters()
-        return render_template('modals/add_match.html', fighters=fighters)
-    return '', 404
-
-@app.route('/modal/edit/<entity_type>/<int:entity_id>')
-def get_edit_modal(entity_type, entity_id):
-    if entity_type == 'fighter':
-        fighter = db.get_fighter_with_record(entity_id)
-        if fighter:
-            gyms = db.get_all_gyms()
-            return render_template('modals/edit_fighter.html', fighter=fighter, gyms=gyms)
-    elif entity_type == 'gym':
-        gym = db.get_gym('gym_id', entity_id)
-        if gym:
-            return render_template('modals/edit_gym.html', gym=gym)
-    elif entity_type == 'trainer':
-        trainer = db.get_trainer('trainer_id', entity_id)
-        if trainer:
-            gyms = db.get_all_gyms()
-            return render_template('modals/edit_trainer.html', trainer=trainer, gyms=gyms)
-    elif entity_type == 'match':
-        match = db.execute("""
-            SELECT * FROM match_events WHERE match_id = %s
-        """, (entity_id,), fetchone=True)
-        if match:
-            return render_template('modals/edit_match.html', match=match)
-    return '', 404
-
-@app.route('/modal/fighter/<int:fighter_id>/add_trainer')
-def get_add_trainer_to_fighter_modal(fighter_id):
-    fighter = db.get_fighter('fighter_id', fighter_id)
-    if not fighter:
-        return '', 404
-    
-    # Get trainers not currently assigned to this fighter
-    current_trainer_ids = [t['trainer_id'] for t in db.get_fighter_trainers(fighter_id) if not t['end_date']]
-    all_trainers = db.get_all_trainers()
-    available_trainers = [t for t in all_trainers if t['trainer_id'] not in current_trainer_ids]
-    
-    return render_template('modals/add_trainer_to_fighter.html', 
-                         fighter=fighter, 
-                         trainers=available_trainers)
-
-@app.route('/modal/fighter/<int:fighter_id>/change_gym')
-def get_change_fighter_gym_modal(fighter_id):
-    fighter = db.get_fighter('fighter_id', fighter_id)
-    if not fighter:
-        return '', 404
-    
-    gyms = db.get_all_gyms()
-    return render_template('modals/change_fighter_gym.html', 
-                         fighter=fighter, 
-                         gyms=gyms)
-
-@app.route('/modal/gym/<int:gym_id>/add_fighter')
-def get_add_fighter_to_gym_modal(gym_id):
-    gym = db.get_gym('gym_id', gym_id)
-    if not gym:
-        return '', 404
-    
-    # Get fighters not currently in a gym
-    available_fighters = db.get_all_fighters_without_gym()
-    
-    return render_template('modals/add_fighter_to_gym.html', 
-                         gym=gym, 
-                         fighters=available_fighters)
-
-@app.route('/modal/gym/<int:gym_id>/add_trainer')
-def get_add_trainer_to_gym_modal(gym_id):
-    gym = db.get_gym('gym_id', gym_id)
-    if not gym:
-        return '', 404
-    
-    # Get trainers not currently in a gym
-    available_trainers = db.get_all_trainers_without_gym()
-    
-    return render_template('modals/add_trainer_to_gym.html', 
-                         gym=gym, 
-                         trainers=available_trainers)
-
-@app.route('/modal/trainer/<int:trainer_id>/change_gym')
-def get_change_trainer_gym_modal(trainer_id):
-    trainer = db.get_trainer('trainer_id', trainer_id)
-    if not trainer:
-        return '', 404
-    
-    gyms = db.get_all_gyms()
-    return render_template('modals/change_trainer_gym.html', 
-                         trainer=trainer, 
-                         gyms=gyms)
-
-@app.route('/modal/trainer/<int:trainer_id>/add_fighter')
-def get_add_fighter_to_trainer_modal(trainer_id):
-    trainer = db.get_trainer('trainer_id', trainer_id)
-    if not trainer:
-        return '', 404
-    
-    # Get fighters not currently trained by this trainer
-    current_fighter_ids = [f['fighter_id'] for f in db.get_trainer_fighters(trainer_id) if not f['end_date']]
-    all_fighters = db.get_all_fighters()
-    available_fighters = [f for f in all_fighters if f['fighter_id'] not in current_fighter_ids]
-    
-    return render_template('modals/add_fighter_to_trainer.html', 
-                         trainer=trainer, 
-                         fighters=available_fighters)
-
-@app.route('/modal/match/<int:match_id>/change_fighters')
-def get_change_match_fighters_modal(match_id):
-    match = db.get_match_fighters(match_id)
-    if not match:
-        return '', 404
-    
-    fighters = db.get_all_fighters()
-    return render_template('modals/change_match_fighters.html', 
-                         match=match, 
-                         fighters=fighters)
-
-@app.route('/modal/match/<int:match_id>/change_dates')
-def get_change_match_dates_modal(match_id):
-    match = db.execute("""
-        SELECT * FROM match_events WHERE match_id = %s
-    """, (match_id,), fetchone=True)
-    
-    if not match:
-        return '', 404
-    
-    return render_template('modals/change_match_dates.html', match=match)
-
-@app.route('/modal/match/<int:match_id>/change_location')
-def get_change_match_location_modal(match_id):
-    match = db.execute("""
-        SELECT * FROM match_events WHERE match_id = %s
-    """, (match_id,), fetchone=True)
-    
-    if not match:
-        return '', 404
-    
-    return render_template('modals/change_match_location.html', match=match)
-
-@app.route('/modal/match/<int:match_id>/change_result')
-def get_change_match_result_modal(match_id):
-    match = db.get_match_fighters(match_id)
-    if not match:
-        return '', 404
-    
-    return render_template('modals/change_match_result.html', match=match)
 
 # Add a context processor for datetime formatting
 @app.context_processor
