@@ -255,7 +255,7 @@ async function loadTrainers() {
 }
 
 // Display trainers in the list
-function displayTrainers(trainers) {
+async function displayTrainers(trainers) {
     const trainersList = document.getElementById('trainersList');
     
     if (trainers.length === 0) {
@@ -269,7 +269,46 @@ function displayTrainers(trainers) {
         return;
     }
     
-    trainersList.innerHTML = trainers.map(trainer => `
+    // Pre-load fighter counts for each trainer in parallel
+    const trainersWithCounts = await Promise.all(
+        trainers.map(async (trainer) => {
+            try {
+                // Fetch fighters trained by this trainer
+                const response = await fetch(`/api/trainers/${trainer.trainer_id}/fighters`);
+                let fighterCount = 0;
+                
+                if (response.ok) {
+                    const fighters = await response.json();
+                    fighterCount = fighters.length;
+                }
+                
+                // Also get gym name if trainer has a gym_id
+                let gymName = trainer.gym_name;
+                if (trainer.gym_id && !gymName) {
+                    const gymResponse = await fetch(`/api/gyms/${trainer.gym_id}`);
+                    if (gymResponse.ok) {
+                        const gym = await gymResponse.json();
+                        gymName = gym.name;
+                    }
+                }
+                
+                return { 
+                    ...trainer, 
+                    fighter_count: fighterCount,
+                    gym_name: gymName || trainer.gym_name
+                };
+            } catch (error) {
+                console.error('Error loading data for trainer:', trainer.trainer_id, error);
+                return { 
+                    ...trainer, 
+                    fighter_count: 0,
+                    gym_name: trainer.gym_name 
+                };
+            }
+        })
+    );
+    
+    trainersList.innerHTML = trainersWithCounts.map(trainer => `
         <div class="trainer-card" data-id="${trainer.trainer_id}" onclick="selectTrainer(${trainer.trainer_id})">
             <div class="trainer-card-header">
                 <div class="trainer-name">
@@ -285,7 +324,7 @@ function displayTrainers(trainers) {
                     </span>
                     <span class="info-item">
                         <i class="fas fa-users"></i>
-                        ${trainer.fighter_count || 0} fighters
+                        ${trainer.fighter_count} fighters
                     </span>
                 </div>
                 
