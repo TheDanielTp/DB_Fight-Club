@@ -789,38 +789,6 @@ def get_matches():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/debug/matches')
-def debug_matches():
-    """Debug endpoint to check what's happening"""
-    try:
-        # Check if table exists
-        table_check = db.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'match_events'
-            );
-        """, fetchone=True)
-        
-        # Count matches
-        count = db.execute("SELECT COUNT(*) as count FROM match_events", fetchone=True)
-        
-        # Get sample matches
-        sample = db.execute("""
-            SELECT match_id, start_date, location 
-            FROM match_events 
-            LIMIT 5
-        """, fetch=True)
-        
-        return jsonify({
-            'table_exists': table_check['exists'] if table_check else False,
-            'total_matches': count['count'] if count else 0,
-            'sample_matches': sample if sample else [],
-            'database_uri_set': bool(os.environ.get("DB_URI")),
-            'app_secret_set': bool(os.environ.get('SECRET_KEY'))
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
 # Utility routes
 @app.route('/api/fighters/without-gym')
 def get_fighters_without_gym():
@@ -880,12 +848,9 @@ def gyms():
                          search_term=search_term)
 
 @app.route('/api/matches/<int:match_id>', methods=['GET'])
-@app.route('/api/matches/<int:match_id>', methods=['GET'])
 def get_match_details(match_id):
     """Get detailed match information"""
-    try:
-        print(f"DEBUG: Getting match details for match_id: {match_id}")
-        
+    try:        
         # Get match details
         match_details = db.execute("""
             SELECT 
@@ -953,6 +918,44 @@ def update_match_api(match_id):
                 return jsonify({'error': f'Failed to update {field}'}), 500
         
         return jsonify({'message': 'Match updated successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/matches/<int:match_id>/fighters', methods=['PUT'])
+@require_login
+def update_match_fighters(match_id):
+    """Replace a fighter in a match"""
+    try:
+        data = request.get_json()
+        
+        old_fighter_id = data.get('old_fighter_id')
+        new_fighter_id = data.get('new_fighter_id')
+        
+        if not old_fighter_id or not new_fighter_id:
+            return jsonify({'error': 'old_fighter_id and new_fighter_id are required'}), 400
+        
+        if db.update_match_player(match_id, old_fighter_id, new_fighter_id):
+            return jsonify({'message': 'Fighter replaced successfully'})
+        else:
+            return jsonify({'error': 'Failed to update match fighters'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/matches/<int:match_id>/result', methods=['PUT'])
+@require_login
+def update_match_result_json(match_id):
+    """Update match result"""
+    try:
+        data = request.get_json()
+        
+        winner_id = data.get('winner_id')
+        if winner_id is None:
+            return jsonify({'error': 'winner_id is required'}), 400
+        
+        if db.update_match_result(match_id, winner_id):
+            return jsonify({'message': 'Match result updated successfully'})
+        else:
+            return jsonify({'error': 'Failed to update match result'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1132,341 +1135,6 @@ def view_match(match_id):
                          match_details=match_details,
                          fighters=fighters)
 
-@app.route('/api/add/fighter', methods=['POST'])
-def add_fighter():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        name = request.form.get('name')
-        nickname = request.form.get('nickname', '')
-        weight_class = request.form.get('weight_class')
-        height = float(request.form.get('height')) # type: ignore
-        age = int(request.form.get('age')) # type: ignore
-        nationality = request.form.get('nationality', '')
-        status = request.form.get('status', 'active')
-        gym_id = request.form.get('gym_id')
-        
-        if gym_id:
-            gym_id = int(gym_id)
-        else:
-            gym_id = None
-        
-        fighter_id = db.create_fighter(name, nickname, weight_class, height, age, nationality, status, gym_id)
-        
-        if fighter_id:
-            return jsonify({'success': True, 'fighter_id': fighter_id})
-        else:
-            return jsonify({'error': 'Failed to create fighter'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/add/gym', methods=['POST'])
-def add_gym():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        name = request.form.get('name')
-        location = request.form.get('location')
-        owner = request.form.get('owner')
-        reputation_score = int(request.form.get('reputation_score', 75))
-        
-        gym_id = db.create_gym(name, location, owner, reputation_score)
-        
-        if gym_id:
-            return jsonify({'success': True, 'gym_id': gym_id})
-        else:
-            return jsonify({'error': 'Failed to create gym'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/add/trainer', methods=['POST'])
-def add_trainer():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        name = request.form.get('name')
-        specialty = request.form.get('specialty')
-        gym_id = request.form.get('gym_id')
-        
-        if gym_id:
-            gym_id = int(gym_id)
-        else:
-            gym_id = None
-        
-        trainer_id = db.create_trainer(name, specialty, gym_id)
-        
-        if trainer_id:
-            return jsonify({'success': True, 'trainer_id': trainer_id})
-        else:
-            return jsonify({'error': 'Failed to create trainer'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/add/match', methods=['POST'])
-def add_match():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        start_date = request.form.get('start_date')
-        end_date = request.form.get('end_date')
-        location = request.form.get('location')
-        fighter1_id = int(request.form.get('fighter1_id')) # type: ignore
-        fighter2_id = int(request.form.get('fighter2_id')) # type: ignore
-        winner_id = request.form.get('winner_id')
-        
-        if winner_id == 'draw':
-            winner_id = 0
-        elif winner_id == 'no_contest':
-            winner_id = -1
-        else:
-            winner_id = int(winner_id) # type: ignore
-        
-        match_id = db.create_match(start_date, location, fighter1_id, fighter2_id, end_date, winner_id)
-        
-        if match_id:
-            return jsonify({'success': True, 'match_id': match_id})
-        else:
-            return jsonify({'error': 'Failed to create match'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/update/gym/<int:gym_id>', methods=['POST'])
-def update_gym(gym_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        field = request.form.get('field')
-        value = request.form.get('value')
-        
-        if field == 'reputation_score':
-            value = int(value) # type: ignore
-        
-        success = db.update_gym(gym_id, field, value)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to update gym'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/update/trainer/<int:trainer_id>', methods=['POST'])
-def update_trainer(trainer_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        field = request.form.get('field')
-        value = request.form.get('value')
-        
-        if field == 'gym_id':
-            value = int(value) if value else None
-        
-        success = db.update_trainer(trainer_id, field, value)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to update trainer'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/update/match/<int:match_id>', methods=['POST'])
-def update_match(match_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        field = request.form.get('field')
-        value = request.form.get('value')
-        
-        if field == 'start_date' or field == 'end_date':
-            if value:
-                value = datetime.fromisoformat(value.replace('Z', '+00:00'))
-            else:
-                value = None
-        
-        success = db.update_match(match_id, field, value)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to update match'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/delete/gym/<int:gym_id>', methods=['POST'])
-def delete_gym(gym_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        success = db.delete_gym(gym_id)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to delete gym'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/delete/trainer/<int:trainer_id>', methods=['POST'])
-def delete_trainer(trainer_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        success = db.delete_trainer(trainer_id)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to delete trainer'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/delete/match/<int:match_id>', methods=['POST'])
-def delete_match(match_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        success = db.delete_match(match_id)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to delete match'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/gym/add_fighter', methods=['POST'])
-def add_fighter_to_gym():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        gym_id = int(request.form.get('gym_id')) # type: ignore
-        fighter_id = int(request.form.get('fighter_id')) # type: ignore
-        
-        success = db.update_fighter(fighter_id, 'gym_id', gym_id)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to add fighter to gym'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/gym/add_trainer', methods=['POST'])
-def add_trainer_to_gym():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        gym_id = int(request.form.get('gym_id')) # type: ignore
-        trainer_id = int(request.form.get('trainer_id')) # type: ignore
-        
-        success = db.update_trainer(trainer_id, 'gym_id', gym_id)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to add trainer to gym'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/gym/remove_fighter', methods=['POST'])
-def remove_fighter_from_gym():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        fighter_id = int(request.form.get('fighter_id')) # type: ignore
-        
-        success = db.update_fighter(fighter_id, 'gym_id', None)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to remove fighter from gym'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/gym/remove_trainer', methods=['POST'])
-def remove_trainer_from_gym():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        trainer_id = int(request.form.get('trainer_id')) # type: ignore
-        
-        success = db.update_trainer(trainer_id, 'gym_id', None)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to remove trainer from gym'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/trainer/add_fighter', methods=['POST'])
-def add_fighter_to_trainer():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        trainer_id = int(request.form.get('trainer_id')) # type: ignore
-        fighter_id = int(request.form.get('fighter_id')) # type: ignore
-        
-        success = db.add_fighter_trainer(fighter_id, trainer_id)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to add fighter to trainer'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
-@app.route('/api/trainer/remove_fighter', methods=['POST'])
-def remove_fighter_from_trainer():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    try:
-        trainer_id = int(request.form.get('trainer_id')) # type: ignore
-        fighter_id = int(request.form.get('fighter_id')) # type: ignore
-        
-        success = db.remove_fighter_trainer(fighter_id, trainer_id)
-        
-        if success:
-            return jsonify({'success': True})
-        else:
-            return jsonify({'error': 'Failed to remove fighter from trainer'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
-
 # =================== UPDATE MATCH FIGHTERS ===================
 
 @app.route('/api/match/update_fighter', methods=['POST'])
@@ -1560,11 +1228,6 @@ def get_stats():
             'matches': 0,
             'success': False
         })
-
-@app.route('/init-db')
-def init_db():
-    db.init_db()
-    return 'Database initialized successfully'
 
 if __name__ == '__main__':
     app.run(debug=True)
