@@ -40,6 +40,13 @@
   </p>
 </div>
 
+## Overview
+<div align="center">
+  <a href="https://github.com/TheDanielTp/DB_Fight-Club">
+    <img src="images/fight-club.gif" alt="Gif" width="700">
+  </a>
+</div>
+
 ## ERD Diagram
 <div align="center">
 <img src="images/erd.png" alt="ERD" width="700"/>
